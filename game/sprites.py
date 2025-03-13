@@ -39,7 +39,7 @@ class Bird(BaseSprite):
         super().__init__()
         self.alive = True
         self.pos_yrand = 50
-        self.pos = Vector2f(50, 250 + np.random.randint(-self.pos_yrand, self.pos_yrand+1))
+        self.pos = Vector2f(50, 300 + np.random.randint(-self.pos_yrand, self.pos_yrand+1))
         self.v = Vector2f(0, 0)
         self.angle = 0
 
@@ -83,7 +83,7 @@ class Bird(BaseSprite):
             self.alive &= not self.hitbox.collide(pipe.hitbox)
         if not self.alive: 
             self.time_score = sprites['ground'].timer
-            self.score = sprites['pipes'].score*10 + self.time_score
+            self.score = self.time_score # + sprites['pipes'].score*10 
         return not self.alive
 
 class Pipe(BaseSprite):

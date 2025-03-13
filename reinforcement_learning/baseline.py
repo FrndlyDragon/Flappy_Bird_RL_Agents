@@ -14,11 +14,15 @@ torch.autograd.set_detect_anomaly(True)
 class BaselineModel(nn.Module):
     def __init__(self):
         super().__init__()
-        self.fc1 = nn.Linear(3, 2)
+        self.bn = nn.BatchNorm1d(4)
+        self.fc1 = nn.Linear(4, 10)
+        self.fc2 = nn.Linear(10, 2)
     
     def forward(self, x):
         x = x.to(device)
-        return F.softmax(self.fc1(x), dim=-1)
+        x = self.bn(x)
+        x = F.relu(self.fc1(x))
+        return F.softmax(self.fc2(x), dim=-1)
 
 
 class BaselineAgents(BaseAgents):
@@ -26,20 +30,34 @@ class BaselineAgents(BaseAgents):
         super().__init__(n_agents=n_agents, lr=lr)
         self.model = BaselineModel().to(device)
 
-        self.feature_shape = (3,)
+        self.feature_shape = (4,)
         self.features = torch.zeros(n_agents, *self.feature_shape)
 
         self.optimizer = optim.Adam(self.model.parameters(), lr=lr)
 
         self.rewards_mean_ma = 0
-        self.gamma = 0.5
+        self.gamma = 0.2
 
     def get_features(self, game):
+        """
         if not game.sprites['pipes'].start: 
-            _features = torch.ones(self.n_agents, 2) * torch.tensor([window_width, game.sprites['ground'].timer], dtype=torch.float)
-            self.features = torch.hstack([torch.tensor([[window_height - bird.pos.y] for bird in self.birds]), _features]).float()
+            _features = torch.ones(self.n_agents, 1) * game.sprites['ground'].timer
+            self.features = torch.hstack([torch.tensor([[bird.pos.y, , window_width - bird.pos.x] for bird in self.birds]), _features]).float()
             return
-        feature_lists = [[[abs(pipe.pos.y - bird.pos.y) for pipe in game.sprites['pipes'].get_all_pipes() if bird.pos.x < pipe.pos.x + pipe.size[0]][0], [pipe.pos.x - (bird.pos.x + bird.size[0]) for pipe in game.sprites['pipes'].get_all_pipes() if bird.pos.x < pipe.pos.x][0]] for bird in self.birds]
+        """
+        feature_lists = []
+        for bird in self.birds:
+            ver_dists_to_pipes = [abs(pipe.pos.y - bird.pos.y) for pipe in game.sprites['pipes'].get_all_pipes() if bird.pos.x < (pipe.pos.x + pipe.size[0])]
+            hor_dists_to_pipes = [pipe.pos.x - (bird.pos.x + bird.size[0]) for pipe in game.sprites['pipes'].get_all_pipes() if bird.pos.x < pipe.pos.x]
+            if len(ver_dists_to_pipes) == 0:  
+                ver_dists_to_pipe = window_height - bird.pos.y
+            else:
+                ver_dists_to_pipe = ver_dists_to_pipes[0]
+            if len(hor_dists_to_pipes) == 0: 
+                hor_dists_to_pipe = window_width - bird.pos.x
+            else:
+                hor_dists_to_pipe = hor_dists_to_pipes[0]
+            feature_lists.append([bird.pos.y, ver_dists_to_pipe, hor_dists_to_pipe])
         self.features = torch.hstack([torch.tensor(feature_lists), torch.ones(self.n_agents, 1) * game.sprites['ground'].timer]).float()
      
     def forward(self):
@@ -55,15 +73,15 @@ class BaselineAgents(BaseAgents):
         """
         Backwards pass
         """
-        self.reward = torch.tensor([bird.score - score_threshold for bird in self.birds], dtype=torch.float)
-        #self.rewards_mean_ma = self.gamma*raw_reward.mean() + (1-self.gamma)*self.rewards_mean_ma
-        #self.reward = (raw_reward - raw_reward.mean())/(raw_reward.std() + 1e-8)
+        raw_reward = torch.tensor([bird.score for bird in self.birds], dtype=torch.float)
+        self.rewards_mean_ma = self.gamma*raw_reward.mean() + (1-self.gamma)*self.rewards_mean_ma
+        self.reward = (raw_reward - self.rewards_mean_ma)
         losses = []
         for reward, agent_loss in zip(self.reward, self.losses):
-            losses.append(-reward * (torch.cat(agent_loss).mean().view(1,1) + 1))
+            losses.append(-reward * (torch.cat(agent_loss).mean().view(1,1)))
         loss = torch.cat(losses).mean()
         loss.backward()
         #for param in self.model.parameters():
         #    print(param.grad)
         self.optimizer.step()
-        return loss, self.reward
+        return loss, raw_reward
