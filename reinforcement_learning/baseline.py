@@ -15,14 +15,18 @@ class BaselineModel(nn.Module):
     def __init__(self):
         super().__init__()
         self.bn = nn.BatchNorm1d(4)
-        self.fc1 = nn.Linear(4, 10)
-        self.fc2 = nn.Linear(10, 2)
+        self.fc1 = nn.Linear(4, 100)
+        self.fc2 = nn.Linear(100, 100)
+        self.fc3 = nn.Linear(100, 10)
+        self.fc4 = nn.Linear(10, 2)
     
     def forward(self, x):
         x = x.to(device)
         x = self.bn(x)
         x = F.relu(self.fc1(x))
-        return F.softmax(self.fc2(x), dim=-1)
+        x = F.relu(self.fc2(x))
+        x = F.relu(self.fc3(x))
+        return F.softmax(self.fc4(x), dim=-1)
 
 
 class BaselineAgents(BaseAgents):
@@ -36,7 +40,7 @@ class BaselineAgents(BaseAgents):
         self.optimizer = optim.Adam(self.model.parameters(), lr=lr)
 
         self.rewards_mean_ma = 0
-        self.gamma = 0.2
+        self.gamma = 0.5
 
     def get_features(self, game):
         """
@@ -73,13 +77,13 @@ class BaselineAgents(BaseAgents):
         """
         Backwards pass
         """
-        raw_reward = torch.tensor([bird.score for bird in self.birds], dtype=torch.float)
+        raw_reward = torch.tensor([bird.reward for bird in self.birds], dtype=torch.float)
         self.rewards_mean_ma = self.gamma*raw_reward.mean() + (1-self.gamma)*self.rewards_mean_ma
         self.reward = (raw_reward - self.rewards_mean_ma)
         losses = []
         for reward, agent_loss in zip(self.reward, self.losses):
             losses.append(-reward * (torch.cat(agent_loss).mean().view(1,1)))
-        loss = torch.cat(losses).mean()
+        loss = torch.cat(losses).mean()# + self.reward.std()
         loss.backward()
         #for param in self.model.parameters():
         #    print(param.grad)

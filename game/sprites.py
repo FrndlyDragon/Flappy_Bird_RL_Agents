@@ -35,10 +35,10 @@ class Ground(BaseSprite):
         self.timer += dt
 
 class Bird(BaseSprite):
-    def __init__(self, alpha=1):
+    def __init__(self, alpha=1, gamma=0.999):
         super().__init__()
         self.alive = True
-        self.pos_yrand = 50
+        self.pos_yrand = 10
         self.pos = Vector2f(50, 300 + np.random.randint(-self.pos_yrand, self.pos_yrand+1))
         self.v = Vector2f(0, 0)
         self.angle = 0
@@ -54,7 +54,9 @@ class Bird(BaseSprite):
         self.hitbox = Hitbox(self.pos.as_tuple(), (self.size[0]-10, self.size[1]), hitbox_multiplier=0.95, col=(0, 0, 255, alpha), offsets=(10,5))
 
         self.score = 0
-        self.time_score = 0
+        self.reward = 0
+        self.gamma = gamma
+        self.timer = 0
 
     def blit(self, screen, debug_kwargs):
         screen.blit(self.image, self.pos.as_tuple())
@@ -77,13 +79,14 @@ class Bird(BaseSprite):
         self.image.get_rect().center = self.center
 
         self.alive = self.pos.y + self.size[1] < window_height and self.pos.y > 0
+        hit_ground_or_sky = not self.alive
         for pipe in sprites['pipes'].top_pipes:
             self.alive &= not self.hitbox.collide(pipe.hitbox)
         for pipe in sprites['pipes'].bottom_pipes:
             self.alive &= not self.hitbox.collide(pipe.hitbox)
-        if not self.alive: 
-            self.time_score = sprites['ground'].timer
-            self.score = self.time_score # + sprites['pipes'].score*10 
+        self.reward = self.alive*dt + sprites['pipes'].score - self.score - hit_ground_or_sky*self.alive + self.gamma*self.reward
+        self.score = sprites['pipes'].score
+        self.timer += self.alive*dt
         return not self.alive
 
 class Pipe(BaseSprite):

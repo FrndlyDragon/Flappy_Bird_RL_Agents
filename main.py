@@ -11,7 +11,7 @@ if __name__ == "__main__":
     pygame.display.set_caption("Flappy Bird") 
 
     game = FlappyBird(debug_kwargs={'hitbox_show': False}, max_speed=True, max_frames=3200)
-    agents = BaselineAgents(n_agents=128, lr=1e-2)
+    agents = BaselineAgents(n_agents=64, lr=5e-2)
     game.set_rl(agents.forward, agents)
     
     epochs = 500
@@ -24,5 +24,5 @@ if __name__ == "__main__":
         loss, reward = agents.backward(100)
         _loss_str = f"{loss:.2f}"
         _reward_str = f"{max(reward):.2f}"
-        _time_str = f"{max([bird.time_score for bird in agents.birds]):.2f}"
+        _time_str = f"{max([bird.timer for bird in agents.birds]):.2f}"
         print(f"Epoch {epoch+1:>3}/{epochs}, Loss: {_loss_str:>8}, Best Performing Agent Score/Time: {_reward_str:>6}/{_time_str:>5}")
