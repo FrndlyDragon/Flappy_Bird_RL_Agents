@@ -1,12 +1,14 @@
 import pygame
 import numpy as np
+import gymnasium as gym
 
 import time
 
 from game.fb_game import FlappyBird
 from reinforcement_learning.baseline import BaselineAgents
 
-if __name__ == "__main__":           
+if __name__ == "__main__":
+    gym.pprint_registry()           
     pygame.init() 
     pygame.display.set_caption("Flappy Bird") 
 

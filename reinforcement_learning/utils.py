@@ -1,5 +1,6 @@
 import torch
 import pygame
+import gymnasium as gym
 
 select_device = "cpu"
 
@@ -13,3 +14,6 @@ def get_last_frames(surface, width, height):
 
     downscale = pygame.transform.scale(image, (width, height))
     pygame.image.save(downscale, "./frames/last_frame_downscale.png")
+
+def grey_scale(image):
+    arr = pygame.surfarray.arr  
