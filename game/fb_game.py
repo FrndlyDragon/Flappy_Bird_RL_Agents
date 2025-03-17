@@ -4,6 +4,7 @@ import time
 from game.utils import fps, RenderText, window_width, window_height
 from game.sprites import Background, Bird, Pipes, Ground
 
+from reinforcement_learning.utils import get_last_frames
 from pygame.locals import *
 flags = FULLSCREEN | DOUBLEBUF
 
@@ -14,7 +15,7 @@ class FlappyBird():
         self.max_speed = max_speed
         self.max_frames = max_frames
         self.rl = False
-
+        self.frame_capture = 0
         self.screen = pygame.display.set_mode((window_width, window_height)) 
         self.clock = pygame.time.Clock() 
         self.sprites = {
@@ -31,6 +32,7 @@ class FlappyBird():
         self.sprites['bird'] = self.agents
     
     def reset(self):
+        self.frame_capture = 0
         self.clock = pygame.time.Clock() 
         for sprite_name, sprite in self.sprites.items():
             if sprite_name == 'bird' and self.rl: 
@@ -74,6 +76,10 @@ class FlappyBird():
             RenderText(self.screen, f"Timer: {self.sprites['ground'].timer:.2f}", pos=(0, 40))
             pygame.display.flip()
             if frames > self.max_frames and self.max_frames > 0: break
+            get_last_frames(self.screen, window_width // 2, window_height // 2, self.frame_capture)
+            self.frame_capture += 1
+            if self.frame_capture >= 4:
+                self.frame_capture = 0
             frames += 1
 
         time.sleep(0.5)
