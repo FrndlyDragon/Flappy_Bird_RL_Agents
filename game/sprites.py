@@ -66,27 +66,26 @@ class Bird(BaseSprite):
         if not self.alive: 
             self.pos.x -= vx*dt
             self.hitbox.update(-vx*dt, 0)
-            return True
-        
-        self.pos.y += self.v.y*dt
-        self.hitbox.update(0, self.v.y*dt)
-        self.v.y += g*dt
+        else:           
+            self.pos.y += self.v.y*dt
+            self.hitbox.update(0, self.v.y*dt)
+            self.v.y += g*dt
 
-        if keydown: self.v.y = -350
+            if keydown: self.v.y = -350
 
-        self.angle = 180*np.arctan(self.v.y/(3*vx))/np.pi
-        self.image = pygame.transform.rotate(self.base_image, -self.angle)
-        self.image.get_rect().center = self.center
+            self.angle = 180*np.arctan(self.v.y/(3*vx))/np.pi
+            self.image = pygame.transform.rotate(self.base_image, -self.angle)
+            self.image.get_rect().center = self.center
+            
+            hit_ground_or_sky = (self.pos.y + self.size[1] > window_height) or (self.pos.y < 0)
+            self.alive = not hit_ground_or_sky
 
-        self.alive = self.pos.y + self.size[1] < window_height and self.pos.y > 0
-        hit_ground_or_sky = not self.alive
-        for pipe in sprites['pipes'].top_pipes:
-            self.alive &= not self.hitbox.collide(pipe.hitbox)
-        for pipe in sprites['pipes'].bottom_pipes:
-            self.alive &= not self.hitbox.collide(pipe.hitbox)
-        self.reward = self.alive*dt + sprites['pipes'].score - self.score - hit_ground_or_sky*self.alive + self.gamma*self.reward
-        self.score = sprites['pipes'].score
-        self.timer += self.alive*dt
+            for pipe in sprites['pipes'].get_all_pipes():
+                self.alive &= not self.hitbox.collide(pipe.hitbox)
+            self.score = sprites['pipes'].score
+            self.timer += self.alive*dt
+
+            self.reward = self.alive*(0.1 + sprites['pipes'].score - self.score) - 0.5*hit_ground_or_sky - (1 - self.alive) + self.gamma*self.reward
         return not self.alive
 
 class Pipe(BaseSprite):

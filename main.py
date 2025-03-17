@@ -11,7 +11,7 @@ if __name__ == "__main__":
     pygame.display.set_caption("Flappy Bird") 
 
     game = FlappyBird(debug_kwargs={'hitbox_show': False}, max_speed=True, max_frames=3200)
-    agents = BaselineAgents(n_agents=64, lr=5e-2)
+    agents = BaselineAgents(n_agents=64, lr=1e-2)
     game.set_rl(agents.forward, agents)
     
     epochs = 500

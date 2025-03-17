@@ -2,7 +2,8 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
-from torch.distributions import Categorical
+
+import numpy as np
 
 from reinforcement_learning.base_model import BaseAgents
 from reinforcement_learning.utils import device
@@ -22,21 +23,25 @@ class BaselineModel(nn.Module):
         x = x.to(device)
         x = self.bn(x)
         x = F.relu(self.fc1(x))
-        return F.softmax(self.fc4(x), dim=-1)
+        return self.fc4(x)
 
 
-class BaselineAgents(BaseAgents):
-    def __init__(self, n_agents=16, lr=1e-3):
-        super().__init__(n_agents=n_agents, lr=lr)
+class BaselineDeepQAgents(BaseAgents):
+    def __init__(self, lr=1e-3):
+        super().__init__(n_agents=1, lr=lr)
         self.model = BaselineModel().to(device)
 
         self.feature_shape = (4,)
-        self.features = torch.zeros(n_agents, *self.feature_shape)
+        self.features = torch.zeros(*self.feature_shape)
 
         self.optimizer = optim.Adam(self.model.parameters(), lr=lr)
 
         self.rewards_mean_ma = 0
         self.gamma = 0.3
+
+        self.epsilon = 1
+        self.epsilon_decay = 0.995
+        self.epsilon_min = 0.01
 
     def get_features(self, game):
         """
@@ -61,6 +66,7 @@ class BaselineAgents(BaseAgents):
         self.features = torch.tensor(feature_lists).float()
      
     def forward(self):
+        if np.random.random() < self.epsilon: return 
         probs = self.model(self.features).cpu()
         dist = Categorical(probs)
         self.output = dist.sample()
