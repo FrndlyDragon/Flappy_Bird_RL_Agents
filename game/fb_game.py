@@ -1,4 +1,6 @@
 import pygame
+import numpy as np
+from typing import Literal
 
 from game.utils import fps, RenderText, window_width, window_height
 from game.sprites import Background, Bird, Pipes, Ground
@@ -8,8 +10,9 @@ flags = FULLSCREEN | DOUBLEBUF
 
 
 class FlappyBird():
-    def __init__(self, debug_kwargs, max_speed=False):
+    def __init__(self, debug_kwargs, state_type:Literal['var','img']='var', max_speed=False):
         self.debug_kwargs = debug_kwargs
+        self.state_type = state_type
         self.max_speed = max_speed
         # pygame
         self.screen = pygame.display.set_mode((window_width, window_height)) 
@@ -40,6 +43,43 @@ class FlappyBird():
         return self.get_state()
 
     def get_state(self):
+        if self.state_type == 'var':
+            return self.get_features()
+        elif self.state_type == 'img':
+            return self.get_frame()
+
+    def get_reward(self):
+        reward = 0.1 + 1*(self.score - self.previous_score) - 1*int(not self.bird.isalive) - 0.5*int(self.bird.hit_ground_or_sky)
+        self.previous_score = self.score
+        return reward
+
+    def step(self, action):
+        if self.max_speed: 
+                dt = 1/fps
+                self.clock.tick()
+        else: 
+                dt = self.clock.tick(fps)/1000
+        pygame.event.get()
+
+        self.update(dt, action)
+        for sprite in self.get_sprites(): sprite.blit(self.screen, self.debug_kwargs)
+
+        RenderText(self.screen, f"FPS: {self.clock.get_fps():.1f}")
+        RenderText(self.screen, f"Score: {self.score}", pos=(0, 20))
+        RenderText(self.screen, f"Timer: {self.clock.get_time():.2f}", pos=(0, 40))
+        pygame.display.flip()
+
+        kwargs = {'score': self.score}
+        return self.get_state(), self.get_reward(), not self.bird.isalive, kwargs
+    
+    def get_frame(self, shape=(84,84)):
+        pixels = pygame.surfarray.array3d(self.screen)
+        pixels = pygame.transform.scale(pygame.surfarray.make_surface(pixels), (shape[0], shape[1]))
+        pixels = pygame.surfarray.array3d(pixels)
+        gray_pixels = np.expand_dims(np.mean(pixels, axis=2), axis=0)
+        return gray_pixels
+
+    def get_features(self):
         next_top_pipes = [pipe for pipe in self.pipes.top_pipes if self.bird.pos.x < (pipe.pos.x + pipe.size[0])]
         next_bottom_pipes = [pipe for pipe in self.pipes.bottom_pipes if self.bird.pos.x < (pipe.pos.x + pipe.size[0])]
         ### get features
@@ -63,30 +103,6 @@ class FlappyBird():
         bird_angle = (bird_angle) / 90
 
         return [bird_y, bird_angle, top_pipe_x, top_pipe_y, bottom_pipe_x, bottom_pipe_y]
-
-    def get_reward(self):
-        reward = 0.05 + 1*(self.score - self.previous_score) - 1*int(not self.bird.isalive) - 0.5*int(self.bird.hit_ground_or_sky)
-        self.previous_score = self.score
-        return reward
-
-    def step(self, action):
-        if self.max_speed: 
-                dt = 1/fps
-                self.clock.tick()
-        else: 
-                dt = self.clock.tick(fps)/1000
-
-        self.update(dt, action)
-        for sprite in self.get_sprites(): sprite.blit(self.screen, self.debug_kwargs)
-
-        RenderText(self.screen, f"FPS: {self.clock.get_fps():.1f}")
-        RenderText(self.screen, f"Score: {self.score}", pos=(0, 20))
-        RenderText(self.screen, f"Timer: {self.clock.get_time():.2f}", pos=(0, 40))
-        pygame.display.flip()
-
-        kwargs = {'score': self.score}
-        return self.get_state(), self.get_reward(), not self.bird.isalive, kwargs
-
 
     """def run(self):
         frames = 0

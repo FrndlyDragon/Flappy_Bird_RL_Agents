@@ -4,14 +4,13 @@ from game.dynamicRules import DynamicRules
 from RL.policyNetwork import *
 
 
-
 if __name__ == "__main__":
     pygame.init()
     pygame.display.set_caption("Flappy Bird") 
-    game = FlappyBird(debug_kwargs={'hitbox_show': False}, max_speed=True)
-    dynamicRules = DynamicRules(pipe_y_sep=350, score_threshold=5, upd_value=10)
+    game = FlappyBird(debug_kwargs={'hitbox_show': False}, state_type='var', max_speed=True)
+    dynamicRules = DynamicRules(pipe_y_sep=250, score_threshold=5, upd_value=25)
 
-    agent = REINFORCE(lr=1e-2)
+    agent = REINFORCE(lr=1e-3)
 
     epochs = 5000
 
