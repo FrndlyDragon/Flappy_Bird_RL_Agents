@@ -1,37 +1,19 @@
-import torch
-import torch.nn as nn
+from RL.policyNetwork import *
 import torch.optim as optim
-
-
-class PolicyNetwork(nn.Module):
-    def __init__(self,) -> None:
-        super(PolicyNetwork, self).__init__()
-        self.conv1 = nn.Conv2d(in_channels=1, out_channels=32, kernel_size=8, stride=4)
-        self.conv2 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=4, stride=2) 
-        self.conv3 = nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1)
-        self.fc1 = nn.Linear(3136, 512)
-        self.fc2 = nn.Linear(512, 64)
-        self.fc3 = nn.Linear(64, 2)
-        self.softmax = nn.Softmax(dim=-1)
-
-    def forward(self, state):
-        X = torch.relu(self.conv1(state))
-        X = torch.relu(self.conv2(X))
-        X = torch.relu(self.conv3(X))
-        X = X.view(1, -1)
-        X = torch.relu(self.fc1(X))
-        X = torch.relu(self.fc2(X))
-        action_probs = self.softmax(self.fc3(X))
-        return action_probs
-
+import torch
 
 class REINFORCE: 
-    def __init__(self, lr=0.01, gamma=0.99) -> None:
-        self.policy = PolicyNetwork()
+    def __init__(self, network='baseline', lr=0.01, gamma=0.99) -> None:
+        match network:
+            case 'baseline': self.policy = Baseline()
+            case 'CNN': self.policy = CNN()
         self.optimizer = optim.Adam(self.policy.parameters(), lr=lr)
         self.gamma = gamma
         self.log_probs = []
         self.rewards = []
+    
+    def input_type(self):
+        return self.policy.input_type()
     
     def select_action(self, state):
         state = torch.tensor(state, dtype=torch.float32)
@@ -62,4 +44,3 @@ class REINFORCE:
         self.optimizer.step()
         self.log_probs = []
         self.rewards = []
-        
