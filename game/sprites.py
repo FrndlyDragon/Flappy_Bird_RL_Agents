@@ -1,18 +1,21 @@
 import pygame
 import numpy as np
 
-from game.utils import Vector2f, window_width, window_height, g, pipe_y_sep, vx, RenderText, Hitbox
+from game.utils import Vector2f, window_width, window_height, g, vx, RenderText, Hitbox
+from game.dynamicRules import DynamicRules
 
 class BaseSprite(pygame.sprite.Sprite):
+    image = None
+    hitbox = None
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
         self.pos = Vector2f(0, 0)
     
     def blit(self, screen, debug_kwargs):
         screen.blit(self.image, self.pos.as_tuple())
+        if self.hitbox is not None: 
+            if debug_kwargs['hitbox_show']: self.hitbox.blit(screen)
 
-    def update(self, dt, keydown, sprites):
-        return False
 
 class Background(BaseSprite):
     def __init__(self):
@@ -21,23 +24,22 @@ class Background(BaseSprite):
         self.image = pygame.image.load("assets/background.png").convert_alpha()
         self.size = self.image.get_size()
 
+
 class Ground(BaseSprite):
     def __init__(self):
         super().__init__()
         self.pos = Vector2f(0, 550)
         self.image = pygame.image.load("assets/ground.png").convert_alpha() # patten length is 23
         self.size = self.image.get_size()
-
-        self.timer = 0
     
-    def update(self, dt, keydown, sprites):
+    def update(self, dt):
         self.pos.x = (self.pos.x - vx*dt) % 23 - 23
-        self.timer += dt
+
 
 class Bird(BaseSprite):
-    def __init__(self, alpha=1, gamma=0.999):
+    def __init__(self, alpha=1):
         super().__init__()
-        self.alive = True
+        self.isalive = True
         self.pos_yrand = 10
         self.pos = Vector2f(50, 300 + np.random.randint(-self.pos_yrand, self.pos_yrand+1))
         self.v = Vector2f(0, 0)
@@ -54,19 +56,12 @@ class Bird(BaseSprite):
         self.hitbox = Hitbox(self.pos.as_tuple(), (self.size[0]-10, self.size[1]), hitbox_multiplier=0.95, col=(0, 0, 255, alpha), offsets=(10,5))
 
         self.score = 0
-        self.reward = 0
-        self.gamma = gamma
-        self.timer = 0
-
-    def blit(self, screen, debug_kwargs):
-        screen.blit(self.image, self.pos.as_tuple())
-        if debug_kwargs['hitbox_show']: self.hitbox.blit(screen)
     
-    def update(self, dt, keydown, sprites):
-        if not self.alive: 
+    def update(self, dt, keydown, pipes):
+        if not self.isalive: 
             self.pos.x -= vx*dt
             self.hitbox.update(-vx*dt, 0)
-            return True
+            return
         
         self.pos.y += self.v.y*dt
         self.hitbox.update(0, self.v.y*dt)
@@ -78,24 +73,22 @@ class Bird(BaseSprite):
         self.image = pygame.transform.rotate(self.base_image, -self.angle)
         self.image.get_rect().center = self.center
 
-        self.alive = self.pos.y + self.size[1] < window_height and self.pos.y > 0
-        hit_ground_or_sky = not self.alive
-        for pipe in sprites['pipes'].top_pipes:
-            self.alive &= not self.hitbox.collide(pipe.hitbox)
-        for pipe in sprites['pipes'].bottom_pipes:
-            self.alive &= not self.hitbox.collide(pipe.hitbox)
-        self.reward = self.alive*dt + sprites['pipes'].score - self.score - hit_ground_or_sky*self.alive + self.gamma*self.reward
-        self.score = sprites['pipes'].score
-        self.timer += self.alive*dt
-        return not self.alive
+        self.isalive = self.pos.y + self.size[1] < window_height and self.pos.y > 0
+        self.hit_ground_or_sky = not self.isalive
+        for pipe in pipes.top_pipes:
+            self.isalive &= not self.hitbox.collide(pipe.hitbox)
+        for pipe in pipes.bottom_pipes:
+            self.isalive &= not self.hitbox.collide(pipe.hitbox)
+        self.hit_pipe = not self.hit_ground_or_sky and not self.isalive
+
 
 class Pipe(BaseSprite):
     def __init__(self, top=False, yoffset=None): 
         super().__init__()
         self.width = 89
         self.height = 611
-        self.yrange = [225, 525]
-        if yoffset is None: self.yoffset = np.random.randint(self.yrange[0], self.yrange[1]+1) + (-pipe_y_sep - self.height) * (not top)
+        self.yrange = [50 + DynamicRules().pipe_y_sep, 350 + DynamicRules().pipe_y_sep]
+        if yoffset is None: self.yoffset = np.random.randint(self.yrange[0], self.yrange[1]+1) + (-DynamicRules().pipe_y_sep - self.height) * (not top)
         else: self.yoffset = yoffset
         self.pos = Vector2f(window_width, -self.yoffset)
 
@@ -106,17 +99,14 @@ class Pipe(BaseSprite):
         if top: self.image = self.base_image
         else: self.image = pygame.transform.flip(self.base_image, False, True)
 
-        self.alive = True
+        self.isalive = True
         self.hitbox = Hitbox(self.pos.as_tuple(), self.size, col=(255, 0, 0))
-    
-    def blit(self, screen, debug_kwargs):
-        screen.blit(self.image, self.pos.as_tuple())
-        if debug_kwargs['hitbox_show']: self.hitbox.blit(screen)
 
-    def update(self, dt, keydown, sprites):
+    def update(self, dt):
         self.pos.x -= vx*dt
         self.hitbox.update(-vx*dt, 0)
-        self.alive = self.pos.x > -self.width 
+        self.isalive = self.pos.x > -self.width 
+
 
 class Pipes(BaseSprite):
     def __init__(self, no_pipes_time=3, pipe_interval=1.5):
@@ -129,32 +119,24 @@ class Pipes(BaseSprite):
         self.pipe_interval = pipe_interval
         self.start = False
 
-        self.score = 0
+        self.passed = 0
 
-    def update(self, dt, keydown, sprites):
+    def update(self, dt):
         self.timer += dt
         if self.timer > self.no_pipes_time: 
             self.start = True
         if (self.start and self.timer > self.pipe_interval): 
             self.top_pipes.append(Pipe(top=True))
-            self.bottom_pipes.append(Pipe(top=False, yoffset=self.top_pipes[-1].yoffset + (-pipe_y_sep - self.top_pipes[-1].height)))
+            self.bottom_pipes.append(Pipe(top=False, yoffset=self.top_pipes[-1].yoffset + (-DynamicRules().pipe_y_sep - self.top_pipes[-1].height)))
             self.timer = 0
-        if self.start and not self.top_pipes[0].alive:
+        if self.start and not self.top_pipes[0].isalive:
             self.top_pipes.pop(0)
             self.bottom_pipes.pop(0)
-            self.score += 1
-        for pipe in self.top_pipes:
-            pipe.update(dt, keydown, sprites)
-        for pipe in self.bottom_pipes:
-            pipe.update(dt, keydown, sprites)
+            self.passed += 1
+        for pipe in self.top_pipes: pipe.update(dt)
+        for pipe in self.bottom_pipes: pipe.update(dt)
     
     def blit(self, screen, debug_kwargs):
-        for pipe in self.top_pipes:
-            pipe.blit(screen, debug_kwargs)
-        for pipe in self.bottom_pipes:
-            pipe.blit(screen, debug_kwargs)
-        
-    
-    def get_all_pipes(self):
-        return self.top_pipes + self.bottom_pipes
+        for pipe in self.top_pipes: pipe.blit(screen, debug_kwargs)
+        for pipe in self.bottom_pipes: pipe.blit(screen, debug_kwargs)
 

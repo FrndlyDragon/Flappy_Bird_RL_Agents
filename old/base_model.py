@@ -11,7 +11,7 @@ class BaseAgents(BaseSprite):
         self.alive_filter = np.ones(self.n_agents)
         self.model = None
 
-        self.feature_shape = (0,)
+        self.feature_shape = (4,)
         self.features = torch.zeros(n_agents, *self.feature_shape)
         self.output = None 
         self.losses = [[] for _ in range(n_agents)]

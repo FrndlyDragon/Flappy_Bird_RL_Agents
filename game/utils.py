@@ -8,8 +8,6 @@ fps = 32
 
 g = 1000
 
-pipe_y_sep = 175
-
 vx = 200  ## velocity at x direction (in the game universe, no need to be shown)
 
 class Vector2f():
@@ -24,7 +22,7 @@ class Vector2f():
         return (self.x, self.y)
     
 class Hitbox(pygame.sprite.Sprite):
-    def __init__(self, pos, size, hitbox_multiplier=1, col=(255, 0, 0), offsets=(0,0)):
+    def __init__(self, pos, size, hitbox_multiplier=1., col=(255, 0, 0), offsets=(0,0)):
         self.color = col
         self.top = pos[1] + size[1]*(1-hitbox_multiplier)/2 + offsets[1]
         self.bottom = pos[1] + size[1]*(1+hitbox_multiplier)/2 + offsets[1]
