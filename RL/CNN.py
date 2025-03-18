@@ -104,8 +104,8 @@ class CustomCNNMultiFrame(CNN):
         self.conv3 = nn.Conv2d(in_channels=32, out_channels=32, kernel_size=3, stride=1)
         self.bn3 = nn.BatchNorm2d(32)
 
-        self.fc1 = nn.Linear(1568, hidden_size)
-        self.fc2 = nn.Linear(hidden_size, hidden_size)
+        self.fc1 = nn.Linear(1568, self.repr_dim)
+        self.fc2 = nn.Linear(self.repr_dim, hidden_size)
         self.fc3 = nn.Linear(hidden_size, hidden_size//2)
         self.fc4 = nn.Linear(hidden_size // 2, 2)
         if deepq: self.softmax = lambda x:x

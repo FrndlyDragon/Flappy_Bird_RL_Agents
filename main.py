@@ -18,7 +18,7 @@ baseline:
 - epsilon_decay: 0.9
 """
 
-network = 'customCNN_MF'  # "baseline" or "customCNN" or "pretrainedCNN" or FF
+network = 'customCNN_MF'  # "baseline" or "customCNN" or "customCNN_MF" or "pretrainedCNN" or FF
 mode = "deepq"  # "policy_grad" or "deepq"
 
 if __name__ == "__main__":
@@ -32,14 +32,15 @@ if __name__ == "__main__":
     agent = model(network=network, lr=5e-3, batch_size=64, target_update_freq=200, epsilon_decay=0.95, epsilon_exploration=True)
     DynamicRules().set_rules(275, 5, 25)
 
-    pretrain(agent, epochs=50, dataset_size=50, batch_size=64, lr=5e-4,
-             save_dataset=True, use_saved=False, dataset_path="pretrained_dataset_4_frames.pth", nframes=4)
+    if network != 'baseline':
+        pretrain(agent, epochs=50, dataset_size=5000, batch_size=64, lr=2e-3,
+                save_dataset=True, use_saved=False, dataset_path="pretrained_dataset_4_frames.pth", nframes=4)
 
     # train
     policy, mean_scores, rulechange_epochs = train(agent, 1000)
 
     # plot
-    plot_performance(mean_scores, points= rulechange_epochs, fname=f'{mode}_{network}_scores')
+    plot_performance(mean_scores, points=rulechange_epochs, fname=f'{mode}_{network}_scores')
 
     # eval
     eval(agent, policy, n_games=100)

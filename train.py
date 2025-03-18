@@ -1,7 +1,6 @@
 import pygame
 import copy
-
-import RL.agent as agent
+from tqdm import tqdm
 
 from game.fb_game import FlappyBird
 from game.dynamicRules import DynamicRules
@@ -65,7 +64,7 @@ def eval(agent, policy, n_games = 20, max_score=1000):
     game = FlappyBird(debug_kwargs={'hitbox_show': False}, agent=agent, state_type=agent.input_type(), max_speed=True)
 
     total_score = 0
-    for _ in range(n_games):
+    for _ in tqdm(range(n_games)):
         state = game.reset()
 
         while True:
