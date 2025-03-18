@@ -73,13 +73,13 @@ class Bird(BaseSprite):
         self.image = pygame.transform.rotate(self.base_image, -self.angle)
         self.image.get_rect().center = self.center
 
-        self.isalive = self.pos.y + self.size[1] < window_height and self.pos.y > 0
-        self.hit_ground_or_sky = not self.isalive
+        self.hit_sky = self.pos.y < 0
+        self.hit_ground = self.pos.y + self.size[1] > window_height
+        self.isalive = not self.hit_sky and not self.hit_ground
         for pipe in pipes.top_pipes:
             self.isalive &= not self.hitbox.collide(pipe.hitbox)
         for pipe in pipes.bottom_pipes:
             self.isalive &= not self.hitbox.collide(pipe.hitbox)
-        self.hit_pipe = not self.hit_ground_or_sky and not self.isalive
 
 
 class Pipe(BaseSprite):

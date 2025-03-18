@@ -59,7 +59,7 @@ class CustomCNN(CNN):
         X = torch.relu(self.conv1(state))
         X = torch.relu(self.conv2(X))
         X = X.view(state.shape[0], -1)
-        X = self.fc1(X)
+        X = self.relu(self.fc1(X))
         return X
 
     def forward(self, state):
@@ -99,6 +99,8 @@ class CustomCNNMultiFrame(CNN):
 
         if deepq: self.softmax = lambda x:x
         else: self.softmax = nn.Softmax(dim=-1)
+
+        self.pretrain = [self.conv1, self.bn1, self.conv2, self.bn2, self.conv3, self.bn3, self.fc1, self.fc2]
         self._initialize_weights()
 
         self.pretrain = [self.conv1, self.conv2, self.conv3, self.fc1]
@@ -108,7 +110,8 @@ class CustomCNNMultiFrame(CNN):
         X = torch.relu(self.conv2(X))
         X = torch.relu(self.conv3(X))
         X = X.view(state.shape[0], -1)
-        X = self.fc1(X)
+        X = self.relu(self.fc1(X))
+        X = self.relu(self.fc2(X))
         return X
 
     def forward(self, state):

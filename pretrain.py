@@ -1,5 +1,6 @@
 from tqdm import tqdm
 import os
+import numpy as np
 
 import torch
 import torch.nn as nn
@@ -8,6 +9,7 @@ import torch.optim as optim
 from RL.utils import device
 
 from game.fb_game import FlappyBird
+from game.utils import window_height, window_width, fps
 from game.utils import window_height, window_width, fps
 
 class PretrainModel(nn.Module):
@@ -19,6 +21,9 @@ class PretrainModel(nn.Module):
     def forward(self, state):
         representation = self.model.pretrain_forward(state)
         return self.fc(representation)
+    
+    def freeze(self):
+        self.model.freeze_pretrain()
 
 def pretrain_features(game):
     next_top_pipes = [pipe for pipe in game.pipes.top_pipes if game.bird.pos.x < (pipe.pos.x + pipe.size[0])]
@@ -58,13 +63,12 @@ def pretrain(agent, epochs=10, dataset_size=1000, batch_size=64,
         for _ in tqdm(range(dataset_size)):
             state = game.set_random_state()
             for _ in range(nframes-1):
-                state, _, _, _ = game.step(0)
+                state, _, _, _ = game.step(1 if np.random.random()<0.2 else 0)
             Xs.append(state)
             Ys.append(pretrain_features(game))
         
         Xs = torch.tensor(Xs, dtype=torch.float)
         Ys = torch.tensor(Ys, dtype=torch.float)
-
         if save_dataset: torch.save({'Xs': Xs, 'Ys': Ys}, dataset_path)
     else:
         dataset = torch.load(dataset_path)
@@ -97,5 +101,8 @@ def pretrain(agent, epochs=10, dataset_size=1000, batch_size=64,
         print(f"Pretrain Epoch {epoch}, Loss: {avg_loss:.6f}")
     
     print("Pretrain Done")
+
+    pretrain_model.freeze()
+    print("Froze pretrained model")
 
     return pretrain_model

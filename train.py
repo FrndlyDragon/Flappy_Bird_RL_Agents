@@ -1,7 +1,6 @@
 import pygame
 import copy
-
-import RL.agent as agent
+from tqdm import tqdm
 
 from game.fb_game import FlappyBird
 from game.dynamicRules import DynamicRules
@@ -9,7 +8,8 @@ from game.dynamicRules import DynamicRules
 def train(agent, epochs=1000, score_gamma =0.9):
     agent.policy.train()
     game = FlappyBird(debug_kwargs={'hitbox_show': False}, agent=agent, state_type=agent.input_type(), max_speed=True)
-    dynamicRules = DynamicRules(pipe_y_sep=275, score_threshold=5, upd_value=25)    
+    dynamicRules = DynamicRules() 
+    dynamicRules.set_rules(pipe_y_sep=300, score_threshold=5, upd_value=25)   
 
     scores = []
     rule_change_epochs = []
@@ -39,7 +39,6 @@ def train(agent, epochs=1000, score_gamma =0.9):
                 if agent.mode == "policy_grad": agent.update_policy(state, action, reward, next_state, terminated, epoch)
                 break
             iteration_count += 1
-        if agent.mode == "deepq": agent.decay_epsilon()
         score_mean = (1-score_gamma)*kwargs['score'] + score_gamma*score_mean
         scores.append(kwargs['score'])
         if score_mean > best_score_mean:
@@ -64,7 +63,7 @@ def eval(agent, policy, n_games = 20, max_score=1000):
     game = FlappyBird(debug_kwargs={'hitbox_show': False}, agent=agent, state_type=agent.input_type(), max_speed=True)
 
     total_score = 0
-    for _ in range(n_games):
+    for _ in tqdm(range(n_games)):
         state = game.reset()
 
         while True:
