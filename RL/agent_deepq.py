@@ -74,5 +74,7 @@ class REINFORCE_DEEPQ:
         loss.backward()
         self.optimizer.step()
 
+        self.decay_epsilon()
+
         if iterations % self.target_update_freq == 0:
             self.target.load_state_dict(self.policy.state_dict())

@@ -39,7 +39,6 @@ def train(agent, epochs=1000, score_gamma =0.9):
                 if agent.mode == "policy_grad": agent.update_policy(state, action, reward, next_state, terminated, epoch)
                 break
             iteration_count += 1
-        if agent.mode == "deepq": agent.decay_epsilon()
         score_mean = (1-score_gamma)*kwargs['score'] + score_gamma*score_mean
         scores.append(kwargs['score'])
         if score_mean > best_score_mean:
