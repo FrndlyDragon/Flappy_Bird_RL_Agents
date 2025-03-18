@@ -1,4 +1,5 @@
 from RL.policyNetwork import *
+from RL.utils import device
 import torch.optim as optim
 import torch
 import numpy as np
@@ -6,8 +7,8 @@ import numpy as np
 class REINFORCE: 
     def __init__(self, network='baseline', lr=0.01, gamma=0.99, epsilon_exploration = False, epsilon_start=1.0, epsilon_end =0.001, epsilon_decay = 0.9) -> None:
         match network:
-            case 'baseline': self.policy = Baseline()
-            case 'CNN': self.policy = CNN()
+            case 'baseline': self.policy = Baseline().to(device)
+            case 'CNN': self.policy = CNN().to(device)
         self.optimizer = optim.Adam(self.policy.parameters(), lr=lr)
         self.epsilon_exploration = epsilon_exploration
         self.gamma = gamma
@@ -21,7 +22,7 @@ class REINFORCE:
         return self.policy.input_type()
     
     def select_action(self, state, training= True):
-        state = torch.tensor(state, dtype=torch.float32)
+        state = torch.tensor(state, dtype=torch.float32, device=device)
         action_probs = self.policy(state)
         action_dist = torch.distributions.Categorical(action_probs)
         if self.epsilon_exploration and training and np.random.random() < self.epsilon:

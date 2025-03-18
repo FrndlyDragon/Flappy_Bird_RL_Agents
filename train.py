@@ -5,7 +5,7 @@ from game.dynamicRules import DynamicRules
 import copy
 
 
-def train(agent: agent.REINFORCE, epochs=1000, score_gamma =0.9):
+def train(agent, epochs=1000, score_gamma =0.9):
     pygame.init()
     pygame.display.set_caption("Flappy Bird")
     game = FlappyBird(debug_kwargs={'hitbox_show': False}, state_type=agent.input_type(), max_speed=True)
@@ -45,7 +45,7 @@ def train(agent: agent.REINFORCE, epochs=1000, score_gamma =0.9):
     return best_policy, score_means
 
 
-def eval(agent: agent.REINFORCE, policy, n_games = 20, max_score=1000):
+def eval(agent, policy, n_games = 20, max_score=1000):
     agent.policy = policy
 
     DynamicRules().default_rules()
