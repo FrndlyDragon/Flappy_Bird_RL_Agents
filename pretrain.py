@@ -56,7 +56,7 @@ def pretrain(agent, epochs=10, dataset_size=1000, batch_size=64,
     if not use_saved or not os.path.exists(dataset_path): 
         print("Generating dataset")
         for _ in tqdm(range(dataset_size)):
-            game.set_random_state()
+            state = game.set_random_state()
             for _ in range(nframes-1):
                 state, _, _, _ = game.step(0)
             Xs.append(state)

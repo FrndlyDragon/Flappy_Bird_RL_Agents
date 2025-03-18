@@ -8,7 +8,7 @@ class CNN(nn.Module):
 
     def __init__(self) -> None:
         super(CNN, self).__init__()
-        self.shape = (64,64)
+        self.shape = (84,84)
         self.pretrain = []
 
     def _initialize_weights(self):
@@ -38,49 +38,38 @@ class CNN(nn.Module):
                 param.requires_grad = True
 
 class CustomCNN(CNN):
-    def __init__(self, deepq=False, hidden_size=256, dropout_rate=0.2) -> None:
+    def __init__(self, deepq=False) -> None:
         super(CustomCNN, self).__init__()
-        self.repr_dim = hidden_size 
+        self.repr_dim = 512 
+        self.shape = (80,80)
 
-        self.conv1 = nn.Conv2d(in_channels=1, out_channels=16, kernel_size=8, stride=3)
-        self.bn1 = nn.BatchNorm2d(16)
-        self.conv2 = nn.Conv2d(in_channels=16, out_channels=32, kernel_size=4, stride=2) 
-        self.bn2 = nn.BatchNorm2d(32)
-        self.conv3 = nn.Conv2d(in_channels=32, out_channels=32, kernel_size=3, stride=1)
-        self.bn3 = nn.BatchNorm2d(32)
+        self.conv1 = nn.Conv2d(in_channels=1, out_channels=16, kernel_size=5, stride=2)
+        self.conv2 = nn.Conv2d(in_channels=16, out_channels=32, kernel_size=5, stride=2) 
+        self.fc1 = nn.Linear(9248, 512)
+        self.fc2 = nn.Linear(512, 32)
+        self.fc3 = nn.Linear(32, 2)
 
-        self.fc1 = nn.Linear(1152, hidden_size)
-        self.dropout1 = nn.Dropout(dropout_rate)
-        self.fc2 = nn.Linear(hidden_size, hidden_size)
-        self.dropout2 = nn.Dropout(dropout_rate)
-        self.fc3 = nn.Linear(hidden_size, hidden_size//2)
-
-        self.fc4 = nn.Linear(hidden_size // 2, 2)
         if deepq: self.softmax = lambda x:x
         else: self.softmax = nn.Softmax(dim=-1)
         self._initialize_weights()
 
-        self.pretrain = [self.conv1, self.conv2, self.conv3, self.fc1]
+        self.pretrain = [self.conv1, self.conv2, self.fc1]
 
     def pretrain_forward(self, state):
-        X = torch.relu(self.bn1(self.conv1(state)))
-        X = torch.relu(self.bn2(self.conv2(X)))
-        X = torch.relu(self.bn3(self.conv3(X)))
+        X = torch.relu(self.conv1(state))
+        X = torch.relu(self.conv2(X))
         X = X.view(state.shape[0], -1)
         X = self.fc1(X)
         return X
 
     def forward(self, state):
-        X = torch.relu(self.bn1(self.conv1(state)))
-        X = torch.relu(self.bn2(self.conv2(X)))
-        X = torch.relu(self.bn3(self.conv3(X)))
+        X = torch.relu(self.conv1(state))
+        X = torch.relu(self.conv2(X))
         X = X.view(state.shape[0], -1)
         X = torch.relu(self.fc1(X))
-        X = self.dropout1(X)
         X = torch.relu(self.fc2(X))
-        X = self.dropout2(X)
         X = torch.relu(self.fc3(X))
-        action_probs = self.softmax(self.fc4(X))
+        action_probs = self.softmax(X)
         return action_probs
     
     def get_input(self, game):
@@ -88,56 +77,49 @@ class CustomCNN(CNN):
         pixels = pygame.surfarray.array3d(game.screen)
         pixels = pygame.transform.scale(pygame.surfarray.make_surface(pixels), self.shape)
         pixels = pygame.surfarray.array3d(pixels)
-        current_frame = np.mean(pixels, axis=2)
+        current_frame = np.expand_dims(np.mean(pixels, axis=2), 0)
         # normalize image
         current_frame /= 255
         current_frame = (current_frame - np.mean(current_frame)) / (np.std(current_frame) + 1e-8)
         return current_frame
     
 class CustomCNNMultiFrame(CNN):
-    def __init__(self, deepq=False, hidden_size=256, dropout_rate=0.2, nframes=3) -> None:
+    def __init__(self, deepq=False, nframes=2) -> None:
         super(CustomCNNMultiFrame, self).__init__()
         self.nframes = nframes
         self.previous_frames = [np.zeros(self.shape) for _ in range(nframes)]
-        self.repr_dim = hidden_size 
+        self.repr_dim = 512 
 
-        self.conv1 = nn.Conv2d(in_channels=nframes, out_channels=16, kernel_size=8, stride=3)
-        self.bn1 = nn.BatchNorm2d(16)
-        self.conv2 = nn.Conv2d(in_channels=16, out_channels=32, kernel_size=4, stride=2) 
-        self.bn2 = nn.BatchNorm2d(32)
-        self.conv3 = nn.Conv2d(in_channels=32, out_channels=32, kernel_size=3, stride=1)
-        self.bn3 = nn.BatchNorm2d(32)
+        self.conv1 = nn.Conv2d(in_channels=nframes, out_channels=32, kernel_size=8, stride=4)
+        self.conv2 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=4, stride=2) 
+        self.conv3 = nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1)
+        self.fc1 = nn.Linear(3136, 512)
+        self.fc2 = nn.Linear(512, 64)
+        self.fc3 = nn.Linear(64, 2)
 
-        self.fc1 = nn.Linear(1152, hidden_size)
-        self.dropout1 = nn.Dropout(dropout_rate)
-        self.fc2 = nn.Linear(hidden_size, hidden_size)
-        self.dropout2 = nn.Dropout(dropout_rate)
-        self.fc3 = nn.Linear(hidden_size, hidden_size//2)
-
-        self.fc4 = nn.Linear(hidden_size // 2, 2)
         if deepq: self.softmax = lambda x:x
         else: self.softmax = nn.Softmax(dim=-1)
         self._initialize_weights()
 
+        self.pretrain = [self.conv1, self.conv2, self.conv3, self.fc1]
+
     def pretrain_forward(self, state):
-        X = torch.relu(self.bn1(self.conv1(state)))
-        X = torch.relu(self.bn2(self.conv2(X)))
-        X = torch.relu(self.bn3(self.conv3(X)))
+        X = torch.relu(self.conv1(state))
+        X = torch.relu(self.conv2(X))
+        X = torch.relu(self.conv3(X))
         X = X.view(state.shape[0], -1)
         X = self.fc1(X)
         return X
 
     def forward(self, state):
-        X = torch.relu(self.bn1(self.conv1(state)))
-        X = torch.relu(self.bn2(self.conv2(X)))
-        X = torch.relu(self.bn3(self.conv3(X)))
+        X = torch.relu(self.conv1(state))
+        X = torch.relu(self.conv2(X))
+        X = torch.relu(self.conv3(X))
         X = X.view(state.shape[0], -1)
         X = torch.relu(self.fc1(X))
-        X = self.dropout1(X)
         X = torch.relu(self.fc2(X))
-        X = self.dropout2(X)
         X = torch.relu(self.fc3(X))
-        action_probs = self.softmax(self.fc4(X))
+        action_probs = self.softmax(X)
         return action_probs
     
     def get_input(self, game):
