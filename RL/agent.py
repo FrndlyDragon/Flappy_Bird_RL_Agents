@@ -5,7 +5,8 @@ import torch
 import numpy as np
 
 class REINFORCE: 
-    def __init__(self, network='baseline', lr=0.01, gamma=0.99, epsilon_exploration = False, epsilon_start=1.0, epsilon_end =0.001, epsilon_decay = 0.995) -> None:
+    def __init__(self, network='baseline', lr=0.01, gamma=0.99, epsilon_exploration = False, epsilon_start=1.0, epsilon_end =0.001, epsilon_decay = 0.995, **kwargs) -> None:
+        self.network = network
         match network:
             case 'baseline': self.policy = Baseline().to(device)
             case 'CNN': self.policy = CNN().to(device)
@@ -27,10 +28,10 @@ class REINFORCE:
         action_dist = torch.distributions.Categorical(action_probs)
         if self.epsilon_exploration and training and np.random.random() < self.epsilon:
             action = np.random.choice(range(action_probs.shape[0]))
-            log_prob = action_dist.log_prob(torch.tensor(action))
+            log_prob = action_dist.log_prob(torch.tensor(action, device=device))
         else:
             action = action_dist.sample().item()
-            log_prob = action_dist.log_prob(torch.tensor(action))
+            log_prob = action_dist.log_prob(torch.tensor(action, device=device))
         self.log_probs.append(log_prob)
         return action
     

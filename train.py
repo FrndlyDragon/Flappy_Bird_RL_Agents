@@ -8,7 +8,7 @@ import copy
 def train(agent, epochs=1000, score_gamma =0.9):
     pygame.init()
     pygame.display.set_caption("Flappy Bird")
-    game = FlappyBird(debug_kwargs={'hitbox_show': False}, state_type=agent.input_type(), max_speed=True)
+    game = FlappyBird(debug_kwargs={'hitbox_show': False}, agent=agent, state_type=agent.input_type(), max_speed=True)
     dynamicRules = DynamicRules(pipe_y_sep=275, score_threshold=5, upd_value=25)    
 
     scores = []
@@ -41,7 +41,9 @@ def train(agent, epochs=1000, score_gamma =0.9):
             best_policy = copy.deepcopy(agent.policy)
             best_score_mean = score_mean
 
-        print(f"Epoch {epoch}, Total reward {total_reward:4f}, Score moving average {score_mean:4f}")
+        _rw_str = f"{total_reward:4f}"
+        _sc_str = f"{score_mean:4f}"
+        print(f"Epoch {epoch}, Total reward {_rw_str:>10}, Score moving average {_sc_str:>10}")
         
     print(f"Finished training, best mean score {best_score_mean}")
     return best_policy, scores

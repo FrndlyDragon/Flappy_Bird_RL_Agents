@@ -1,6 +1,3 @@
-
-
-
 class DynamicRules:
     _instance = None
     
