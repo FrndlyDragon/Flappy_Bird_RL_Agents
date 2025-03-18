@@ -26,11 +26,12 @@ def train(agent, epochs=1000, score_gamma =0.9):
         total_reward = 0
         while True:
             action = agent.select_action(state)
-            state, reward, terminated, kwargs = game.step(action)
+            next_state, reward, terminated, kwargs = game.step(action)
+            state = next_state
             agent.store_reward(reward)
             total_reward += reward
             if terminated or kwargs['score']>100:
-                agent.update_policy()
+                agent.update_policy(state, action, reward, next_state, terminated, epoch)
                 break
 
         score_mean = (1-score_gamma)*kwargs['score'] + score_gamma*score_mean

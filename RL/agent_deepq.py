@@ -11,7 +11,7 @@ from RL.policyNetwork import *
 from RL.utils import device
 
 class REINFORCE_DEEPQ: 
-    def __init__(self, network='baseline', lr=0.01, gamma=0.99, epsilon_exploration=False) -> None:
+    def __init__(self, network='baseline', lr=0.01, gamma=0.99, epsilon_exploration=False, epsilon_start=1.0, epsilon_end =0.001, epsilon_decay = 0.9) -> None:
         self.network = network
         match network:
             case 'baseline': 
@@ -28,14 +28,14 @@ class REINFORCE_DEEPQ:
         self.memory = deque(maxlen=10000)
         self.batch_size = 64
 
-        self.epsilon = 1.0
-        self.epsilon_min = 0.01
-        self.epsilon_decay = 0.995
+        self.epsilon = epsilon_start
+        self.epsilon_min = epsilon_end
+        self.epsilon_decay = epsilon_decay
 
         self.target_update_freq = 250
     
-    def select_action(self, state):
-        if random.random() < self.epsilon:
+    def select_action(self, state, training=True):
+        if training and random.random() < self.epsilon:
             return torch.tensor(random.randint(0, 1))
         else:
             state = torch.FloatTensor(state).unsqueeze(0).to(device)

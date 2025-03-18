@@ -5,7 +5,7 @@ import torch
 import numpy as np
 
 class REINFORCE: 
-    def __init__(self, network='baseline', lr=0.01, gamma=0.99, epsilon_exploration = False, epsilon_start=1.0, epsilon_end =0.001, epsilon_decay = 0.9) -> None:
+    def __init__(self, network='baseline', lr=0.01, gamma=0.99, epsilon_exploration = False, epsilon_start=1.0, epsilon_end =0.001, epsilon_decay = 0.995) -> None:
         match network:
             case 'baseline': self.policy = Baseline().to(device)
             case 'CNN': self.policy = CNN().to(device)
@@ -37,7 +37,7 @@ class REINFORCE:
     def store_reward(self, reward):
         self.rewards.append(reward)
 
-    def update_policy(self):
+    def update_policy(self, *args, **kwargs):
         R = 0    
         returns = []
         for r in reversed(self.rewards):

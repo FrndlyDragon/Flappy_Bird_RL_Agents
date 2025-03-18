@@ -12,7 +12,7 @@ if __name__ == "__main__":
     if mode == "deepq": model = REINFORCE_DEEPQ
     elif mode == "policy_grad": model = REINFORCE
     else: raise ValueError(f'{mode} not implemented, only "policy_grad" or "deepq"')
-    
+
     agent = model(network=network, lr=1e-2, epsilon_exploration=False)
 
     # train
