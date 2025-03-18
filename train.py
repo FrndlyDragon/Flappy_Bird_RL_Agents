@@ -11,13 +11,16 @@ def train(agent, epochs=1000, score_gamma =0.9):
     game = FlappyBird(debug_kwargs={'hitbox_show': False}, agent=agent, state_type=agent.input_type(), max_speed=True)
     dynamicRules = DynamicRules(pipe_y_sep=275, score_threshold=5, upd_value=25)    
 
-    score_means = []
+    scores = []
+    rule_change_epochs = []
     score_mean = 0
     best_score_mean = 0
     best_policy = agent.policy
     for epoch in range(epochs):
         changed_rules = dynamicRules.update(score_mean)
         if changed_rules:
+            rule_change_epochs.append(epoch)
+            score_mean = 0
             # reset best policy due to change of environment
             best_policy = copy.deepcopy(agent.policy)
             best_score_mean = 0
@@ -38,8 +41,8 @@ def train(agent, epochs=1000, score_gamma =0.9):
             iteration_count += 1
         if agent.mode == "deepq": agent.decay_epsilon()
         score_mean = (1-score_gamma)*kwargs['score'] + score_gamma*score_mean
-        score_means.append(score_mean)
-        if score_mean > best_score_mean and not changed_rules:
+        scores.append(kwargs['score'])
+        if score_mean > best_score_mean:
             best_policy = copy.deepcopy(agent.policy)
             best_score_mean = score_mean
 
@@ -48,7 +51,7 @@ def train(agent, epochs=1000, score_gamma =0.9):
         print(f"Epoch {epoch:>4}, Total reward {_rw_str:>10}, Score moving average {_sc_str:>10}")
         
     print(f"Finished training, best mean score {best_score_mean}")
-    return best_policy, score_means
+    return best_policy, scores, rule_change_epochs
 
 
 def eval(agent, policy, n_games = 20, max_score=1000):

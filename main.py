@@ -25,10 +25,10 @@ if __name__ == "__main__":
     agent = model(network=network, lr=1e-2, batch_size=128, target_update_freq=100)
 
     # train
-    policy, mean_scores = train(agent, 1500)
+    policy, mean_scores, rulechange_epochs = train(agent, 1000)
 
     # plot
-    plot_performance(mean_scores, f'{network}_mean_scores')
+    plot_performance(mean_scores, points= rulechange_epochs, fname=f'{network}_scores')
 
     # eval
     eval(agent, policy, n_games=100)
