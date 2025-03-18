@@ -1,4 +1,5 @@
-from RL.policyNetwork import *
+from RL.baselineNetwork import *
+from RL.CNN import *
 from RL.utils import device
 import torch.optim as optim
 import torch
@@ -10,7 +11,8 @@ class REINFORCE:
         self.mode = "policy_grad"
         match network:
             case 'baseline': self.policy = Baseline().to(device)
-            case 'CNN': self.policy = CNN().to(device)
+            case 'customCNN': self.policy = CustomCNN().to(device)
+            case 'pretrainedCNN': self.policy = PretrainedCNN().to(device)
         self.optimizer = optim.Adam(self.policy.parameters(), lr=lr)
         self.epsilon_exploration = epsilon_exploration
         self.gamma = gamma

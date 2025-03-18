@@ -7,20 +7,27 @@ import numpy as np
 import random
 from collections import deque
 
-from RL.policyNetwork import *
+from RL.baselineNetwork import *
+from RL.CNN import *
 from RL.utils import device
 
 class REINFORCE_DEEPQ: 
-    def __init__(self, network='baseline', lr=0.01, gamma=0.99, batch_size=64, target_update_freq=250, epsilon_exploration=False, epsilon_start=1.0, epsilon_end =0.001, epsilon_decay = 0.9, **kwargs) -> None:
+    def __init__(self, network='baseline', lr=0.01, gamma=0.99, 
+                 batch_size=64, target_update_freq=250, 
+                 epsilon_exploration=False, epsilon_start=1.0, epsilon_end =0.001, epsilon_decay = 0.9,      
+                 teacher_model=None, teacher_weight=0.5, teacher_decay=0.995, **kwargs) -> None:
         self.network = network
         self.mode = "deepq"
         match network:
             case 'baseline': 
                 self.policy = Baseline(deepq=True).to(device)
                 self.target = Baseline(deepq=True).to(device)
-            case 'CNN': 
-                self.policy = CNN(deepq=True).to(device)
-                self.target = CNN(deepq=True).to(device)
+            case 'customCNN': 
+                self.policy = CustomCNN(deepq=True).to(device)
+                self.target = CustomCNN(deepq=True).to(device)
+            case 'pretrainedCNN': 
+                self.policy = PretrainedCNN(deepq=True).to(device)
+                self.target = PretrainedCNN(deepq=True).to(device)
         self.optimizer = optim.Adam(self.policy.parameters(), lr=lr)
         self.gamma = gamma
         self.log_probs = []

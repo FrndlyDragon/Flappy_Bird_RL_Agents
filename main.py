@@ -13,7 +13,7 @@ baseline:
 - target_update_freq: 250
 """
 
-network = 'baseline'  # "baseline" or "CNN"
+network = 'baseline'  # "baseline" or "customCNN" or "pretrainedCNN"
 mode = "deepq"  # "policy_grad" or "deepq"
 
 if __name__ == "__main__":
