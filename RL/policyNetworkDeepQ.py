@@ -3,27 +3,19 @@ import torch.nn as nn
 import torch.optim as optim
 
 import random
-
 from collections import deque
 
-class PolicyNetwork(nn.Module):
-    def __init__(self,) -> None:
-        super(PolicyNetwork, self).__init__()
-        self.fc1 = nn.Linear(6, 128)
-        self.fc2 = nn.Linear(128, 64)
-        self.fc3 = nn.Linear(64, 2)
-
-    def forward(self, state):
-        X = torch.relu(self.fc1(state))
-        X = torch.relu(self.fc2(X))
-        action_probs = self.fc3(X)
-        return action_probs
-
+from RL.policyNetwork import *
 
 class REINFORCE_DEEPQ: 
-    def __init__(self, lr=0.01, gamma=0.99) -> None:
-        self.policy = PolicyNetwork()
-        self.target = PolicyNetwork()
+    def __init__(self, network='baseline', lr=0.01, gamma=0.99) -> None:
+        match network:
+            case 'baseline': 
+                self.policy = Baseline()
+                self.target = Baseline()
+            case 'CNN': 
+                self.policy = CNN()
+                self.target = CNN()
         self.optimizer = optim.Adam(self.policy.parameters(), lr=lr)
         self.gamma = gamma
         self.log_probs = []
