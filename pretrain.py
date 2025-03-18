@@ -75,12 +75,12 @@ def pretrain(agent, epochs=10, dataset_size=1000, batch_size=64,
     else:
         dataset = torch.load(dataset_path)
         Xs = dataset["Xs"]
-        Ys = dataset["Ys"]
+        Ys = dataset["Ys"][:, [0,2,3,4,5]]
 
     pretrain_model = PretrainModel(agent.policy, learn_features).to(device)
 
     optimizer = optim.Adam(pretrain_model.parameters(), **optim_kwargs)
-    criterion = lambda pred, target: (((pred - target)/(target + 1e-3))**2).mean()  
+    criterion = nn.MSELoss() # lambda pred, target: (((pred - target)/(target + 1e-3))**2).mean()  
 
     dataset = torch.utils.data.TensorDataset(Xs, Ys)
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=True)
@@ -104,7 +104,7 @@ def pretrain(agent, epochs=10, dataset_size=1000, batch_size=64,
     
     print("Pretrain Done")
 
-    pretrain_model.freeze()
+    #pretrain_model.freeze()
     print("Froze pretrained model")
 
     return pretrain_model
