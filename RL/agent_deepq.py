@@ -13,6 +13,7 @@ from RL.utils import device
 class REINFORCE_DEEPQ: 
     def __init__(self, network='baseline', lr=0.01, gamma=0.99, batch_size=64, target_update_freq=250, epsilon_exploration=False, epsilon_start=1.0, epsilon_end =0.001, epsilon_decay = 0.9, **kwargs) -> None:
         self.network = network
+        self.mode = "deepq"
         match network:
             case 'baseline': 
                 self.policy = Baseline(deepq=True).to(device)
