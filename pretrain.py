@@ -1,5 +1,6 @@
 from tqdm import tqdm
 import os
+import numpy as np
 
 import torch
 import torch.nn as nn
@@ -60,16 +61,15 @@ def pretrain(agent, epochs=10, dataset_size=1000, batch_size=64,
     if not use_saved or not os.path.exists(dataset_path): 
         print("Generating dataset")
         for _ in tqdm(range(dataset_size)):
-            game.set_random_state()
+            state = game.set_random_state()
             for _ in range(nframes-1):
-                state, _, _, _ = game.step(0)
+                state, _, _, _ = game.step(1 if np.random.random()<0.2 else 0)
             Xs.append(state)
             Ys.append(pretrain_features(game))
         
         Xs = torch.tensor(Xs, dtype=torch.float)
         Ys = torch.tensor(Ys, dtype=torch.float)
-
-    if save_dataset: torch.save({'Xs': Xs, 'Ys': Ys}, dataset_path)
+        if save_dataset: torch.save({'Xs': Xs, 'Ys': Ys}, dataset_path)
     else:
         dataset = torch.load(dataset_path)
         Xs = dataset["Xs"]

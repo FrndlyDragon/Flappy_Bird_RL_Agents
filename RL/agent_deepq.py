@@ -12,7 +12,7 @@ from RL.utils import device, get_model
 class REINFORCE_DEEPQ: 
     def __init__(self, network='baseline', lr=0.01, gamma=0.99, 
                  batch_size=64, target_update_freq=250, 
-                 epsilon_start=1.0, epsilon_end =0.01, epsilon_decay=0.9, 
+                 epsilon_start=1.0, epsilon_end =0.001, epsilon_decay=0.9, 
                  teacher_model=None, teacher_weight=0.5, teacher_decay=0.995, **kwargs) -> None:
         self.network = network
         self.mode = "deepq"

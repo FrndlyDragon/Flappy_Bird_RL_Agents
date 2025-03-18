@@ -48,10 +48,10 @@ class FlappyBird():
         return self.get_state()
 
     def get_state(self):
-         return self.agent.policy.get_input(self)
+        return self.agent.policy.get_input(self)
 
     def get_reward(self):
-        reward = 3/fps + 1*(self.score - self.previous_score) - 1*int(not self.bird.isalive) -0.5*int(self.bird.hit_ground_or_sky)
+        reward = 3/fps + 2*(self.score - self.previous_score) - 1*int(not self.bird.isalive) -1*int(self.bird.hit_sky) -0.5*int(self.bird.hit_ground)
         self.previous_score = self.score
         return reward
 
@@ -108,39 +108,3 @@ class FlappyBird():
         for sprite in self.get_sprites(): sprite.blit(self.screen, self.debug_kwargs)
         pygame.display.flip()
         return self.get_state()
-
-
-    """def run(self):
-        frames = 0
-        running = True
-        for sprite_name, sprite in self.sprites.items(): sprite.blit(self.screen, self.debug_kwargs)
-        while running: 
-            '''if self.max_speed: 
-                dt = 1/fps
-                self.clock.tick()
-            else: 
-                dt = self.clock.tick(fps)/1000'''
-
-            events = self.get_event()
-            keydown = False
-            '''for event in pygame.event.get():
-                if event.type == pygame.QUIT: 
-                    running = False'''
-            if self.rl:
-                keydown = events 
-            else:
-                for event in events:
-                    if event.type == pygame.KEYDOWN or event.type == pygame.MOUSEBUTTONDOWN:
-                        keydown = True
-            if self.rl: self.agents.get_features(self)
-            for sprite_name, sprite in self.sprites.items(): running &= not sprite.update(dt, keydown, self.sprites)
-            for sprite_name, sprite in self.sprites.items(): sprite.blit(self.screen, self.debug_kwargs)
-
-            RenderText(self.screen, f"FPS: {self.clock.get_fps():.1f}")
-            RenderText(self.screen, f"Score: {self.sprites['pipes'].score}", pos=(0, 20))
-            RenderText(self.screen, f"Timer: {self.sprites['ground'].timer:.2f}", pos=(0, 40))
-            pygame.display.flip()
-            if frames > self.max_frames and self.max_frames > 0: break
-            frames += 1
-
-        time.sleep(0.5)"""
