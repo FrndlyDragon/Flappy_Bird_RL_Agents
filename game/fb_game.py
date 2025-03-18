@@ -2,8 +2,9 @@ import pygame
 import numpy as np
 from typing import Literal
 
-from game.utils import fps, RenderText, window_width, window_height
-from game.sprites import Background, Bird, Pipes, Ground
+from game.utils import fps, RenderText, window_width, window_height, vx
+from game.sprites import Background, Bird, Pipe, Pipes, Ground
+from game.dynamicRules import DynamicRules
 
 from pygame.locals import FULLSCREEN, DOUBLEBUF
 flags = FULLSCREEN | DOUBLEBUF
@@ -36,14 +37,14 @@ class FlappyBird():
         if self.score != self.pipes.passed:
             self.score += 1
     
-    def reset(self):
+    def reset(self, flip=True):
         self.previous_score = 0
         self.score = 0
         self.clock = pygame.time.Clock() 
         self.timer = 0
         for sprite in self.get_sprites(): sprite.__init__()
         for sprite in self.get_sprites(): sprite.blit(self.screen, self.debug_kwargs)
-        pygame.display.flip()
+        if flip: pygame.display.flip()
         return self.get_state()
 
     def get_state(self):
@@ -73,6 +74,41 @@ class FlappyBird():
 
         kwargs = {'score': self.score}
         return self.get_state(), self.get_reward(), not self.bird.isalive, kwargs
+    
+    def set_random_state(self):
+        self.reset(False)
+        self.ground.update(np.random.randint(0, fps*window_width/vx)/fps)
+
+        bird_y_min = 0
+        bird_y_max = window_height - self.bird.size[1]
+
+        pipe_width = Pipe().width
+        pipe_interval = self.pipes.pipe_interval
+        pipe_sep = DynamicRules().pipe_y_sep
+        pipe_xs = [np.random.randint(-pipe_width, int(window_width*1.05))]
+        while pipe_xs[-1] < window_width: pipe_xs.append(pipe_xs[-1] + vx*pipe_interval)
+        pipe_xs = pipe_xs[:-1]
+        for x in pipe_xs:
+            self.pipes.top_pipes.append(Pipe(top=True))
+            self.pipes.bottom_pipes.append(Pipe(top=False, yoffset=self.pipes.top_pipes[-1].yoffset + (-pipe_sep - self.pipes.top_pipes[-1].height)))
+            self.pipes.top_pipes[-1].pos.x = x
+            self.pipes.bottom_pipes[-1].pos.x = x
+            if not x > self.bird.hitbox.right and not x + pipe_width < self.bird.hitbox.left: 
+                bird_y_min = max(bird_y_min, self.pipes.top_pipes[-1].hitbox.bottom)
+                bird_y_max = min(bird_y_max, self.pipes.bottom_pipes[-1].hitbox.top - (self.bird.hitbox.bottom - self.bird.hitbox.top))
+        
+        self.bird.pos.y = np.random.randint(bird_y_min, bird_y_max)
+
+        bird_y_velocity_max = 350
+        self.bird.v.y = np.random.randint(-bird_y_velocity_max, bird_y_velocity_max)
+        self.bird.angle = 180*np.arctan(self.bird.v.y/(3*vx))/np.pi
+        self.bird.image = pygame.transform.rotate(self.bird.base_image, -self.bird.angle)
+        self.bird.image.get_rect().center = self.bird.center
+
+        for sprite in self.get_sprites(): sprite.blit(self.screen, self.debug_kwargs)
+        pygame.display.flip()
+        return self.get_state()
+
 
     """def run(self):
         frames = 0

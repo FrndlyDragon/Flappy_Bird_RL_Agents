@@ -50,14 +50,56 @@ class Baseline(nn.Module):
         return [bird_y, bird_angle, top_pipe_x, top_pipe_y, bottom_pipe_x, bottom_pipe_y]
     
 
+class FF(nn.Module):
+    def __init__(self, deepq=False) -> None:
+        super(FF, self).__init__()
+        self.shape = (72,100)
+        self.repr_dim = 300
+
+        self.fc1 = nn.Linear(self.shape[0]*self.shape[1], 300)
+        self.dropout = nn.Dropout(p=0.9)
+        self.fc2 = nn.Linear(300, 300)
+        self.fc3 = nn.Linear(300, self.repr_dim)
+        self.fc4 = nn.Linear(self.repr_dim, 2)
+        if deepq: self.softmax = lambda x:x
+        else: self.softmax = nn.Softmax(dim=-1)
+    
+    def pretrain_forward(self, state):
+        X = state.view(state.shape[0], -1)
+        X = torch.relu(self.fc1(X))
+        X = self.dropout(X)
+        X = torch.relu(self.fc2(X))
+        X = torch.relu(self.fc3(X))
+        return X
+
+    def forward(self, state):
+        X = state.view(state.shape[0], -1)
+        X = torch.relu(self.fc1(X))
+        X = self.dropout(X)
+        X = torch.relu(self.fc2(X))
+        X = torch.relu(self.fc3(X))
+        action_probs = self.softmax(self.fc4(X))
+        return action_probs
+    
+    def input_type(self):
+        return "img"
+    
+    def get_input(self, game):
+        pixels = pygame.surfarray.array3d(game.screen)
+        pixels = pygame.transform.scale(pygame.surfarray.make_surface(pixels), self.shape)
+        pixels = pygame.surfarray.array3d(pixels)
+        gray_pixels = np.expand_dims(np.mean(pixels, axis=2), axis=0)
+        return gray_pixels
+
 class CNN(nn.Module):
     def __init__(self, deepq=False) -> None:
         super(CNN, self).__init__()
         self.conv1 = nn.Conv2d(in_channels=1, out_channels=32, kernel_size=8, stride=4)
         self.conv2 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=4, stride=2) 
         self.conv3 = nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1)
-        self.fc1 = nn.Linear(3136, 512)
-        self.fc2 = nn.Linear(512, 64)
+        self.maxpool = nn.MaxPool2d(2, 2)
+        self.fc1 = nn.Linear(256, 64)
+        self.fc2 = nn.Linear(64, 64)
         self.fc3 = nn.Linear(64, 2)
         if deepq: self.softmax = lambda x:x
         else: self.softmax = nn.Softmax(dim=-1)
@@ -65,7 +107,7 @@ class CNN(nn.Module):
     def forward(self, state):
         X = torch.relu(self.conv1(state))
         X = torch.relu(self.conv2(X))
-        X = torch.relu(self.conv3(X))
+        X = self.maxpool(torch.relu(self.conv3(X)))
         X = X.view(state.shape[0], -1)
         X = torch.relu(self.fc1(X))
         X = torch.relu(self.fc2(X))
@@ -75,9 +117,15 @@ class CNN(nn.Module):
     def input_type(self):
         return "img"
     
-    def get_input(self, game, shape=(84,84)):
+    def get_input(self, game, shape=(60,60)):
         pixels = pygame.surfarray.array3d(game.screen)
         pixels = pygame.transform.scale(pygame.surfarray.make_surface(pixels), (shape[0], shape[1]))
         pixels = pygame.surfarray.array3d(pixels)
         gray_pixels = np.expand_dims(np.mean(pixels, axis=2), axis=0)
         return gray_pixels
+
+def get_model(name, *args, **kwargs):
+    match name:
+        case 'baseline': return Baseline(*args, **kwargs)
+        case 'FF': return FF(*args, **kwargs)
+        case 'CNN': return CNN(*args, **kwargs)

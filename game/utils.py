@@ -4,7 +4,7 @@ import numpy as np
 window_width = 350
 window_height = 600
 
-fps = 8
+fps = 16
 
 g = 1000
 

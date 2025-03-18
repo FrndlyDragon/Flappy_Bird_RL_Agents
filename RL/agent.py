@@ -8,9 +8,7 @@ class REINFORCE:
     def __init__(self, network='baseline', lr=0.01, gamma=0.99, epsilon_exploration = False, epsilon_start=1.0, epsilon_end =0.001, epsilon_decay = 0.995, **kwargs) -> None:
         self.network = network
         self.mode = "policy_grad"
-        match network:
-            case 'baseline': self.policy = Baseline().to(device)
-            case 'CNN': self.policy = CNN().to(device)
+        self.policy = get_model(network).to(device)
         self.optimizer = optim.Adam(self.policy.parameters(), lr=lr)
         self.epsilon_exploration = epsilon_exploration
         self.gamma = gamma

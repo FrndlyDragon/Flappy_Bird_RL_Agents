@@ -13,6 +13,7 @@ class DynamicRules:
             self.upd_value = upd_value
             self.min_pipe_y_sep = 175
             self.initialized = True
+            self.y_seps = [sep for sep in range(pipe_y_sep, self.min_pipe_y_sep, -upd_value)] + [self.min_pipe_y_sep]
     
     def default_rules(self):
         self.pipe_y_sep = self.min_pipe_y_sep

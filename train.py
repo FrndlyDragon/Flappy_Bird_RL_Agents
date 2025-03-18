@@ -1,13 +1,13 @@
 import pygame
-import RL.agent as agent
-from game.fb_game import FlappyBird
-from game.dynamicRules import DynamicRules
 import copy
 
+import RL.agent as agent
+
+from game.fb_game import FlappyBird
+from game.dynamicRules import DynamicRules
 
 def train(agent, epochs=1000, score_gamma =0.9):
-    pygame.init()
-    pygame.display.set_caption("Flappy Bird")
+    agent.policy.train()
     game = FlappyBird(debug_kwargs={'hitbox_show': False}, agent=agent, state_type=agent.input_type(), max_speed=True)
     dynamicRules = DynamicRules(pipe_y_sep=275, score_threshold=5, upd_value=25)    
 
@@ -56,6 +56,7 @@ def train(agent, epochs=1000, score_gamma =0.9):
 
 def eval(agent, policy, n_games = 20, max_score=1000):
     agent.policy = policy
+    agent.policy.eval()
 
     DynamicRules().default_rules()
     pygame.init()
