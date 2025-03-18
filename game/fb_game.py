@@ -75,7 +75,7 @@ class FlappyBird():
         kwargs = {'score': self.score}
         return self.get_state(), self.get_reward(), not self.bird.isalive, kwargs
     
-    def set_random_state(self):
+    def set_random_state(self, prop_no_pipe=0.25):
         self.reset(False)
         self.ground.update(np.random.randint(0, int(fps*window_width/vx))/fps)
 
@@ -84,8 +84,8 @@ class FlappyBird():
 
         pipe_width = Pipe().width
         pipe_interval = self.pipes.pipe_interval
-        pipe_sep = DynamicRules().pipe_y_sep
-        pipe_xs = [np.random.randint(-pipe_width, int(window_width*1.05))]
+        pipe_sep = DynamicRules().random_sep()
+        pipe_xs = [np.random.randint(-pipe_width, int(window_width*(1.0 + prop_no_pipe)))]
         while pipe_xs[-1] < window_width: pipe_xs.append(pipe_xs[-1] + int(vx*pipe_interval))
         pipe_xs = pipe_xs[:-1]
         for x in pipe_xs:
