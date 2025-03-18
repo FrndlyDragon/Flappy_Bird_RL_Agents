@@ -1,8 +1,9 @@
 import os
 import matplotlib.pyplot as plt
+import numpy as np
 
 
-def plot_performance(mean_scores, fname):
+def plot_performance(scores, fname, points = None, window_size=30):
     """
     Plots the training and validation losses across epochs and saves the plot as an image file with name - fname(function argument). 
 
@@ -19,11 +20,22 @@ def plot_performance(mean_scores, fname):
     if not os.path.isdir('plots'):
         os.mkdir('plots')
 
+    steps = np.arange(len(scores))
+    window = np.ones(window_size) / window_size  # Normalized averaging kernel
+    smoothed_scores = np.convolve(scores, window, mode='valid')
+
     # Plotting training and validation losses
-    plt.plot(mean_scores, label='Score moving average')
-    plt.xlabel('Epoch')
-    plt.ylabel('Mean score')
-    plt.title('Score moving average vs epoch')
+    plt.plot(steps, scores, label="Original Scores", alpha=0.6)
+    plt.plot(steps[window_size-1:], smoothed_scores, label="Smoothed Scores (Moving Average)", linewidth=2)
+
+    if points is not None and len(points)>0:
+        points_scores = [smoothed_scores[p-window_size] if p-window_size>0 else 0 for p in points]
+        plt.scatter(points, points_scores, color='red', marker='x', label='Rules change')
+
+    plt.title("Game Performance (Moving Average)")
+    plt.xlabel("Step")
+    plt.ylabel("Score")
+    plt.legend()
 
     # Saving the plot as an image file in 'plots' directory
     plt.savefig("./plots/" + fname + ".png")
