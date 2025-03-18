@@ -1,6 +1,3 @@
-
-
-
 class DynamicRules:
     _instance = None
     
@@ -16,6 +13,9 @@ class DynamicRules:
             self.upd_value = upd_value
             self.min_pipe_y_sep = 175
             self.initialized = True
+    
+    def default_rules(self):
+        self.pipe_y_sep = self.min_pipe_y_sep
 
     def update(self, score_mean):
         if score_mean>self.score_threshold and self.pipe_y_sep>self.min_pipe_y_sep:

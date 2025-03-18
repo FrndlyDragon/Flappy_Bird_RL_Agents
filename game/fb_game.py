@@ -50,7 +50,7 @@ class FlappyBird():
          return self.agent.policy.get_input(self)
 
     def get_reward(self):
-        reward = 0.1 + 1*(self.score - self.previous_score) - 1*int(not self.bird.isalive) - 0.5*int(self.bird.hit_ground_or_sky)
+        reward = 0.1 + 2*(self.score - self.previous_score) - 1*int(not self.bird.isalive) -0.5*int(self.bird.hit_ground_or_sky)
         self.previous_score = self.score
         return reward
 
