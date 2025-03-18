@@ -4,8 +4,6 @@ import numpy as np
 import pygame
 from torchvision import models
 
-from collections import deque
-
 class CNN(nn.Module):
 
     def __init__(self) -> None:
