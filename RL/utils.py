@@ -2,7 +2,7 @@ import torch
 import sys
 
 from RL.baselineNetwork import Baseline
-from RL.CNN import CustomCNN, PretrainedCNN
+from RL.CNN import CustomCNN, PretrainedCNN, CustomCNNMultiFrame
 from RL.FF import FF
 
 select_device = "cuda"
@@ -16,6 +16,7 @@ def get_model(name, *args, **kwargs):
         case 'FF': return FF(*args, **kwargs)
         case 'customCNN': return CustomCNN(*args, **kwargs)
         case 'pretrainedCNN': return PretrainedCNN(*args, **kwargs)
+        case 'customCNN_MF': return CustomCNNMultiFrame(*args, **kwargs)
         case _: 
             print(f"The model {name} does not exist")
             sys.exit(1)

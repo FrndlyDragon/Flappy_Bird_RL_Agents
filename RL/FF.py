@@ -23,7 +23,7 @@ class FF(nn.Module):
         X = torch.relu(self.fc1(X))
         X = self.dropout(X)
         X = torch.relu(self.fc2(X))
-        X = torch.relu(self.fc3(X))
+        X = self.fc3(X)
         return X
 
     def forward(self, state):

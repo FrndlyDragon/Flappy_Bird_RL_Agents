@@ -84,9 +84,9 @@ class FlappyBird():
 
         pipe_width = Pipe().width
         pipe_interval = self.pipes.pipe_interval
-        pipe_sep = DynamicRules().pipe_y_sep
+        pipe_sep = DynamicRules().random_sep()
         pipe_xs = [np.random.randint(-pipe_width, int(window_width*1.05))]
-        while pipe_xs[-1] < window_width: pipe_xs.append(pipe_xs[-1] + vx*pipe_interval)
+        while pipe_xs[-1] < window_width: pipe_xs.append(pipe_xs[-1] + int(vx*pipe_interval))
         pipe_xs = pipe_xs[:-1]
         for x in pipe_xs:
             self.pipes.top_pipes.append(Pipe(top=True))

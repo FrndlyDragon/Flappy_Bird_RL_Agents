@@ -1,4 +1,5 @@
 from tqdm import tqdm
+import os
 
 import torch
 import torch.nn as nn
@@ -7,7 +8,7 @@ import torch.optim as optim
 from RL.utils import device
 
 from game.fb_game import FlappyBird
-from game.utils import window_height, window_width
+from game.utils import window_height, window_width, fps
 
 class PretrainModel(nn.Module):
     def __init__(self, model):
@@ -47,19 +48,31 @@ def pretrain_features(game):
 
     return [bird_y, bird_angle, top_pipe_x, top_pipe_y, bottom_pipe_x, bottom_pipe_y]
 
-def pretrain(agent, epochs=10, dataset_size=1000, batch_size=64, **optim_kwargs):
+def pretrain(agent, epochs=10, dataset_size=1000, batch_size=64, 
+             save_dataset=True, use_saved=True, dataset_path="pretrained_dataset.pth", 
+             nframes=1, **optim_kwargs):
     game = FlappyBird(debug_kwargs={'hitbox_show': False}, agent=agent, state_type=agent.input_type(), max_speed=True)
 
     Xs = []
     Ys = []
 
-    print("Generating dataset")
-    for _ in tqdm(range(dataset_size)):
-        Xs.append(game.set_random_state())
-        Ys.append(pretrain_features(game))
-    
-    Xs = torch.tensor(Xs, dtype=torch.float)
-    Ys = torch.tensor(Ys, dtype=torch.float)
+    if not use_saved or not os.path.exists(dataset_path): 
+        print("Generating dataset")
+        for _ in tqdm(range(dataset_size)):
+            game.set_random_state()
+            for _ in range(nframes-1):
+                game.update(1/fps, 0)
+            Xs.append(game.get_state())
+            Ys.append(pretrain_features(game))
+        
+        Xs = torch.tensor(Xs, dtype=torch.float)
+        Ys = torch.tensor(Ys, dtype=torch.float)
+
+        if save_dataset: torch.save({'Xs': Xs, 'Ys': Ys}, dataset_path)
+    else:
+        dataset = torch.load(dataset_path)
+        Xs = dataset["Xs"]
+        Ys = dataset["Ys"]
 
     pretrain_model = PretrainModel(agent.policy).to(device)
 
