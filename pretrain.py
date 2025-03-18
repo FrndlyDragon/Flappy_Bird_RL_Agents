@@ -58,8 +58,8 @@ def pretrain(agent, epochs=10, dataset_size=1000, batch_size=64,
         for _ in tqdm(range(dataset_size)):
             game.set_random_state()
             for _ in range(nframes-1):
-                game.update(1/fps, 0)
-            Xs.append(game.get_state())
+                state, _, _, _ = game.step(0)
+            Xs.append(state)
             Ys.append(pretrain_features(game))
         
         Xs = torch.tensor(Xs, dtype=torch.float)

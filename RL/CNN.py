@@ -95,13 +95,13 @@ class CustomCNN(CNN):
         return current_frame
     
 class CustomCNNMultiFrame(CNN):
-    def __init__(self, deepq=False, hidden_size=256, dropout_rate=0.2, nframes=4) -> None:
+    def __init__(self, deepq=False, hidden_size=256, dropout_rate=0.2, nframes=3) -> None:
         super(CustomCNNMultiFrame, self).__init__()
         self.nframes = nframes
         self.previous_frames = [np.zeros(self.shape) for _ in range(nframes)]
         self.repr_dim = hidden_size 
 
-        self.conv1 = nn.Conv2d(in_channels=4, out_channels=16, kernel_size=8, stride=3)
+        self.conv1 = nn.Conv2d(in_channels=nframes, out_channels=16, kernel_size=8, stride=3)
         self.bn1 = nn.BatchNorm2d(16)
         self.conv2 = nn.Conv2d(in_channels=16, out_channels=32, kernel_size=4, stride=2) 
         self.bn2 = nn.BatchNorm2d(32)

@@ -28,10 +28,10 @@ if __name__ == "__main__":
     elif mode == "policy_grad": model = REINFORCE
     else: raise ValueError(f'{mode} not implemented, only "policy_grad" or "deepq"')
 
-    agent = model(network=network, lr=5e-3, batch_size=64, target_update_freq=250, epsilon_decay=0.995, epsilon_exploration=False)
+    agent = model(network=network, lr=1e-3, batch_size=64, target_update_freq=250, epsilon_decay=0.995, epsilon_exploration=False)
 
-    pretrain(agent, epochs=50, dataset_size=5000, batch_size=64, lr=5e-4,
-             save_dataset=True, use_saved=False, dataset_path="pretrained_dataset_4_frames.pth", nframes=4)
+    pretrain(agent, epochs=50, dataset_size=5000, batch_size=64, lr=2e-4,
+             save_dataset=True, use_saved=True, dataset_path="data/pretrained_dataset_3_frames.pth", nframes=3)
     agent.policy.freeze_pretrain()
 
     # train
