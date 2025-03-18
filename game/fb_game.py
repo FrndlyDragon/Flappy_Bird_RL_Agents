@@ -77,7 +77,7 @@ class FlappyBird():
     
     def set_random_state(self):
         self.reset(False)
-        self.ground.update(np.random.randint(0, fps*window_width/vx)/fps)
+        self.ground.update(np.random.randint(0, int(fps*window_width/vx))/fps)
 
         bird_y_min = 0
         bird_y_max = window_height - self.bird.size[1]

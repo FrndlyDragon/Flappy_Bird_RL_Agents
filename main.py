@@ -4,6 +4,7 @@ from train import train, eval
 from pretrain import pretrain
 from util import *
 from RL.agent_deepq import REINFORCE_DEEPQ
+from game.dynamicRules import DynamicRules
 import pygame
 
 """
@@ -28,9 +29,11 @@ if __name__ == "__main__":
     elif mode == "policy_grad": model = REINFORCE
     else: raise ValueError(f'{mode} not implemented, only "policy_grad" or "deepq"')
 
-    agent = model(network=network, lr=1e-4, batch_size=64, target_update_freq=250, epsilon_decay=0.995, epsilon_exploration=True)
+    agent = model(network=network, lr=5e-3, batch_size=64, target_update_freq=200, epsilon_decay=0.95, epsilon_exploration=True)
+    DynamicRules().set_rules(275, 5, 25)
 
-    pretrain(agent, epochs=50, dataset_size=5000, batch_size=64, lr=1e-4)
+    if network != 'baseline':
+        pretrain(agent, epochs=50, dataset_size=5000, batch_size=64, lr=2e-3)
 
     # train
     policy, mean_scores, rulechange_epochs = train(agent, 1000)

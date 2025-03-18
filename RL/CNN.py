@@ -26,7 +26,7 @@ class CNN(nn.Module):
     def input_type(self) -> str:
         return 'img'
     
-    def get_input(self, game, shape=(64,64)):
+    def get_input(self, game, shape=(100,100)):
         # get image
         pixels = pygame.surfarray.array3d(game.screen)
         pixels = pygame.transform.scale(pygame.surfarray.make_surface(pixels), (shape[0], shape[1]))
@@ -44,23 +44,24 @@ class CNN(nn.Module):
 
 
 class CustomCNN(CNN):
-    def __init__(self, deepq=False, hidden_size=128, dropout_rate=0.2) -> None:
+    def __init__(self, deepq=False, hidden_size=128) -> None:
         super(CustomCNN, self).__init__()
         self.previous_frame = None
+        self.repr_dim = hidden_size
 
-        self.conv1 = nn.Conv2d(in_channels=2, out_channels=16, kernel_size=8, stride=3)
+        self.conv1 = nn.Conv2d(in_channels=1, out_channels=16, kernel_size=8, stride=3)
         self.bn1 = nn.BatchNorm2d(16)
         self.conv2 = nn.Conv2d(in_channels=16, out_channels=32, kernel_size=4, stride=2) 
         self.bn2 = nn.BatchNorm2d(32)
         self.conv3 = nn.Conv2d(in_channels=32, out_channels=32, kernel_size=3, stride=1)
         self.bn3 = nn.BatchNorm2d(32)
 
-        self.fc1 = nn.Linear(1152, hidden_size)
-        self.dropout1 = nn.Dropout(dropout_rate)
-        self.fc2 = nn.Linear(hidden_size, hidden_size // 2)
-        self.dropout2 = nn.Dropout(dropout_rate)
+        self.fc1 = nn.Linear(4608, 512)
+        self.fc2 = nn.Linear(512, self.repr_dim)
+        self.fc3 = nn.Linear(self.repr_dim, hidden_size )
+        self.fc4 = nn.Linear(hidden_size, hidden_size // 2)
 
-        self.fc3 = nn.Linear(hidden_size // 2, 2)
+        self.fc5 = nn.Linear(hidden_size // 2, 2)
         if deepq: self.softmax = lambda x:x
         else: self.softmax = nn.Softmax(dim=-1)
         self._initialize_weights()
@@ -71,12 +72,26 @@ class CustomCNN(CNN):
         X = torch.relu(self.bn3(self.conv3(X)))
         X = X.view(state.shape[0], -1)
         X = torch.relu(self.fc1(X))
-        X = self.dropout1(X)
         X = torch.relu(self.fc2(X))
-        X = self.dropout2(X)
-        action_probs = self.softmax(self.fc3(X))
+        X = torch.relu(self.fc3(X))
+        X = torch.relu(self.fc4(X))
+        action_probs = self.softmax(self.fc5(X))
         return action_probs
     
+    def pretrain_forward(self, state):
+        X = torch.relu(self.bn1(self.conv1(state)))
+        X = torch.relu(self.bn2(self.conv2(X)))
+        X = torch.relu(self.bn3(self.conv3(X)))
+        X = X.view(state.shape[0], -1)
+        X = torch.relu(self.fc1(X))
+        X = torch.relu(self.fc2(X))
+        return X
+    
+    def pretrain_freeze(self):
+        for layer in [self.conv1, self.bn1, self.conv2, self.bn2,  self.conv3, self.bn3, self.fc1, self.fc2]:
+            for param in layer.parameters():
+                param.requires_grad = False
+
 
 class PretrainedCNN(CNN):
     def __init__(self, deepq=False, hidden_size=512, dropout_rate=0.2) -> None:

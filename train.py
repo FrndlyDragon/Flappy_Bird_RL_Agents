@@ -9,7 +9,8 @@ from game.dynamicRules import DynamicRules
 def train(agent, epochs=1000, score_gamma =0.9):
     agent.policy.train()
     game = FlappyBird(debug_kwargs={'hitbox_show': False}, agent=agent, state_type=agent.input_type(), max_speed=True)
-    dynamicRules = DynamicRules(pipe_y_sep=275, score_threshold=5, upd_value=25)    
+    dynamicRules = DynamicRules() 
+    dynamicRules.set_rules(pipe_y_sep=300, score_threshold=5, upd_value=25)   
 
     scores = []
     rule_change_epochs = []

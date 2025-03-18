@@ -18,6 +18,9 @@ class PretrainModel(nn.Module):
     def forward(self, state):
         representation = self.model.pretrain_forward(state)
         return self.fc(representation)
+    
+    def freeze(self):
+        self.model.pretrain_freeze()
 
 def pretrain_features(game):
     next_top_pipes = [pipe for pipe in game.pipes.top_pipes if game.bird.pos.x < (pipe.pos.x + pipe.size[0])]
@@ -84,5 +87,8 @@ def pretrain(agent, epochs=10, dataset_size=1000, batch_size=64, **optim_kwargs)
         print(f"Pretrain Epoch {epoch}, Loss: {avg_loss:.6f}")
     
     print("Pretrain Done")
+
+    pretrain_model.freeze()
+    print("Froze pretrained model")
 
     return pretrain_model
