@@ -40,14 +40,15 @@ class CNN(nn.Module):
 class CustomCNN(CNN):
     def __init__(self, deepq=False) -> None:
         super(CustomCNN, self).__init__()
-        self.repr_dim = 512 
+        self.repr_dim = 6 
         self.shape = (80,80)
 
         self.conv1 = nn.Conv2d(in_channels=1, out_channels=16, kernel_size=5, stride=2)
         self.conv2 = nn.Conv2d(in_channels=16, out_channels=32, kernel_size=5, stride=2) 
-        self.fc1 = nn.Linear(9248, 512)
-        self.fc2 = nn.Linear(512, 32)
-        self.fc3 = nn.Linear(32, 2)
+        self.fc1 = nn.Linear(9248, 6)
+        self.fc2 = nn.Linear(6, 128)
+        self.fc3 = nn.Linear(128, 64)
+        self.fc4 = nn.Linear(64, 2)
 
         if deepq: self.softmax = lambda x:x
         else: self.softmax = nn.Softmax(dim=-1)
@@ -59,7 +60,7 @@ class CustomCNN(CNN):
         X = torch.relu(self.conv1(state))
         X = torch.relu(self.conv2(X))
         X = X.view(state.shape[0], -1)
-        X = self.fc1(X)
+        X = torch.relu(self.fc1(X))
         return X
 
     def forward(self, state):
@@ -69,6 +70,7 @@ class CustomCNN(CNN):
         X = torch.relu(self.fc1(X))
         X = torch.relu(self.fc2(X))
         X = torch.relu(self.fc3(X))
+        X = torch.relu(self.fc4(X))
         action_probs = self.softmax(X)
         return action_probs
     
@@ -88,37 +90,37 @@ class CustomCNNMultiFrame(CNN):
         super(CustomCNNMultiFrame, self).__init__()
         self.nframes = nframes
         self.previous_frames = [np.zeros(self.shape) for _ in range(nframes)]
-        self.repr_dim = 512 
+        self.repr_dim = 6 
+        self.shape = (80,80)
 
-        self.conv1 = nn.Conv2d(in_channels=nframes, out_channels=32, kernel_size=8, stride=4)
-        self.conv2 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=4, stride=2) 
-        self.conv3 = nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1)
-        self.fc1 = nn.Linear(3136, 512)
-        self.fc2 = nn.Linear(512, 64)
-        self.fc3 = nn.Linear(64, 2)
+        self.conv1 = nn.Conv2d(in_channels=nframes, out_channels=16, kernel_size=5, stride=2)
+        self.conv2 = nn.Conv2d(in_channels=16, out_channels=32, kernel_size=5, stride=2) 
+        self.fc1 = nn.Linear(9248, 6)
+        self.fc2 = nn.Linear(6, 128)
+        self.fc3 = nn.Linear(128, 64)
+        self.fc4 = nn.Linear(64, 2)
 
         if deepq: self.softmax = lambda x:x
         else: self.softmax = nn.Softmax(dim=-1)
         self._initialize_weights()
 
-        self.pretrain = [self.conv1, self.conv2, self.conv3, self.fc1]
+        self.pretrain = [self.conv1, self.conv2, self.fc1]
 
     def pretrain_forward(self, state):
         X = torch.relu(self.conv1(state))
         X = torch.relu(self.conv2(X))
-        X = torch.relu(self.conv3(X))
         X = X.view(state.shape[0], -1)
-        X = self.fc1(X)
+        X = torch.relu(self.fc1(X))
         return X
 
     def forward(self, state):
         X = torch.relu(self.conv1(state))
         X = torch.relu(self.conv2(X))
-        X = torch.relu(self.conv3(X))
         X = X.view(state.shape[0], -1)
         X = torch.relu(self.fc1(X))
         X = torch.relu(self.fc2(X))
         X = torch.relu(self.fc3(X))
+        X = torch.relu(self.fc4(X))
         action_probs = self.softmax(X)
         return action_probs
     

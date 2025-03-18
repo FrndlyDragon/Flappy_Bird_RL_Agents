@@ -20,7 +20,6 @@ class REINFORCE_DEEPQ:
         self.target = get_model(network, deepq=True).to(device)
         self.optimizer = optim.Adam(self.policy.parameters(), lr=lr)
         self.gamma = gamma
-        self.log_probs = []
         self.rewards = []
 
         self.memory = deque(maxlen=10000)
@@ -74,6 +73,8 @@ class REINFORCE_DEEPQ:
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
+
+        self.decay_epsilon()
 
         if iterations % self.target_update_freq == 0:
             self.target.load_state_dict(self.policy.state_dict())

@@ -1,5 +1,6 @@
 from tqdm import tqdm
 import os
+import numpy as np
 
 import torch
 import torch.nn as nn
@@ -9,16 +10,22 @@ from RL.utils import device
 
 from game.fb_game import FlappyBird
 from game.utils import window_height, window_width, fps
+from game.utils import window_height, window_width, fps
 
 class PretrainModel(nn.Module):
-    def __init__(self, model):
+    def __init__(self, model, learn_features=False):
         super().__init__()
         self.model = model
-        self.fc = nn.Linear(model.repr_dim, 6)
+        if not learn_features: self.fc = nn.Linear(model.repr_dim, 6)
+        self.learn_features = learn_features
     
     def forward(self, state):
         representation = self.model.pretrain_forward(state)
-        return self.fc(representation)
+        if not self.learn_features: representation = self.fc(representation)
+        return representation
+    
+    def freeze(self):
+        self.model.freeze_pretrain()
 
 def pretrain_features(game):
     next_top_pipes = [pipe for pipe in game.pipes.top_pipes if game.bird.pos.x < (pipe.pos.x + pipe.size[0])]
@@ -47,7 +54,7 @@ def pretrain_features(game):
 
 def pretrain(agent, epochs=10, dataset_size=1000, batch_size=64, 
              save_dataset=True, use_saved=True, dataset_path="pretrained_dataset.pth", 
-             nframes=1, **optim_kwargs):
+             nframes=1, learn_features=False, **optim_kwargs):
     game = FlappyBird(debug_kwargs={'hitbox_show': False}, agent=agent, state_type=agent.input_type(), max_speed=True)
 
     Xs = []
@@ -58,23 +65,22 @@ def pretrain(agent, epochs=10, dataset_size=1000, batch_size=64,
         for _ in tqdm(range(dataset_size)):
             state = game.set_random_state()
             for _ in range(nframes-1):
-                state, _, _, _ = game.step(0)
+                state, _, _, _ = game.step(1 if np.random.random()<0.2 else 0)
             Xs.append(state)
             Ys.append(pretrain_features(game))
         
         Xs = torch.tensor(Xs, dtype=torch.float)
         Ys = torch.tensor(Ys, dtype=torch.float)
-
         if save_dataset: torch.save({'Xs': Xs, 'Ys': Ys}, dataset_path)
     else:
         dataset = torch.load(dataset_path)
         Xs = dataset["Xs"]
         Ys = dataset["Ys"]
 
-    pretrain_model = PretrainModel(agent.policy).to(device)
+    pretrain_model = PretrainModel(agent.policy, learn_features).to(device)
 
     optimizer = optim.Adam(pretrain_model.parameters(), **optim_kwargs)
-    criterion = nn.MSELoss()  
+    criterion = lambda pred, target: (((pred - target)/(target + 1e-3))**2).mean()  
 
     dataset = torch.utils.data.TensorDataset(Xs, Ys)
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=True)
@@ -97,5 +103,8 @@ def pretrain(agent, epochs=10, dataset_size=1000, batch_size=64,
         print(f"Pretrain Epoch {epoch}, Loss: {avg_loss:.6f}")
     
     print("Pretrain Done")
+
+    pretrain_model.freeze()
+    print("Froze pretrained model")
 
     return pretrain_model
