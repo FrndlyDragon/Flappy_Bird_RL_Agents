@@ -90,7 +90,7 @@ class FlappyBird():
         pipe_xs = pipe_xs[:-1]
         for x in pipe_xs:
             self.pipes.top_pipes.append(Pipe(top=True))
-            self.pipes.bottom_pipes.append(Pipe(top=False, yoffset=self.pipes.top_pipes[-1].yoffset + (-pipe_sep - self.pipes.top_pipes[-1].height)))
+            self.pipes.bottom_pipes.append(Pipe(top=False, yoffset=self.pipes.top_pipes[-1].yoffset + (-np.random.choice(pipe_sep) - self.pipes.top_pipes[-1].height)))
             self.pipes.top_pipes[-1].pos.x = x
             self.pipes.bottom_pipes[-1].pos.x = x
             if not x > self.bird.hitbox.right and not x + pipe_width < self.bird.hitbox.left: 

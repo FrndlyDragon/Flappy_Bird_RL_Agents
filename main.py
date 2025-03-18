@@ -20,6 +20,8 @@ baseline:
 
 network = 'customCNN_MF'  # "baseline" or "customCNN" or "pretrainedCNN" or FF
 mode = "deepq"  # "policy_grad" or "deepq"
+network = 'customCNN_MF'  # "baseline" or "customCNN" or "pretrainedCNN" or FF
+mode = "deepq"  # "policy_grad" or "deepq"
 
 if __name__ == "__main__":
     pygame.init()
