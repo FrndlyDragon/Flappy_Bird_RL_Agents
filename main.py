@@ -34,7 +34,6 @@ if __name__ == "__main__":
 
     pretrain(agent, epochs=50, dataset_size=50, batch_size=64, lr=5e-4,
              save_dataset=True, use_saved=False, dataset_path="pretrained_dataset_4_frames.pth", nframes=4)
-    agent.policy.freeze_pretrain()
 
     # train
     policy, mean_scores, rulechange_epochs = train(agent, 1000)

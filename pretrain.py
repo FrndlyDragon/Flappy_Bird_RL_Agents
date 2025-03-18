@@ -22,7 +22,7 @@ class PretrainModel(nn.Module):
         return self.fc(representation)
     
     def freeze(self):
-        self.model.pretrain_freeze()
+        self.model.freeze_pretrain()
 
 def pretrain_features(game):
     next_top_pipes = [pipe for pipe in game.pipes.top_pipes if game.bird.pos.x < (pipe.pos.x + pipe.size[0])]

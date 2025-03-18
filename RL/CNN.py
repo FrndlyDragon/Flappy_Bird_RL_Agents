@@ -38,21 +38,19 @@ class CNN(nn.Module):
                 param.requires_grad = True
 
 class CustomCNN(CNN):
-    def __init__(self, deepq=False, hidden_size=256, dropout_rate=0.2) -> None:
+    def __init__(self, deepq=False, hidden_size=256) -> None:
         super(CustomCNN, self).__init__()
         self.repr_dim = hidden_size 
 
-        self.conv1 = nn.Conv2d(in_channels=1, out_channels=16, kernel_size=8, stride=3)
+        self.conv1 = nn.Conv2d(in_channels=1, out_channels=16, kernel_size=5, stride=3)
         self.bn1 = nn.BatchNorm2d(16)
         self.conv2 = nn.Conv2d(in_channels=16, out_channels=32, kernel_size=4, stride=2) 
         self.bn2 = nn.BatchNorm2d(32)
         self.conv3 = nn.Conv2d(in_channels=32, out_channels=32, kernel_size=3, stride=1)
         self.bn3 = nn.BatchNorm2d(32)
 
-        self.fc1 = nn.Linear(1152, hidden_size)
-        self.dropout1 = nn.Dropout(dropout_rate)
+        self.fc1 = nn.Linear(1568, hidden_size)
         self.fc2 = nn.Linear(hidden_size, hidden_size)
-        self.dropout2 = nn.Dropout(dropout_rate)
         self.fc3 = nn.Linear(hidden_size, hidden_size//2)
 
         self.fc4 = nn.Linear(hidden_size // 2, 2)
@@ -76,9 +74,7 @@ class CustomCNN(CNN):
         X = torch.relu(self.bn3(self.conv3(X)))
         X = X.view(state.shape[0], -1)
         X = torch.relu(self.fc1(X))
-        X = self.dropout1(X)
         X = torch.relu(self.fc2(X))
-        X = self.dropout2(X)
         X = torch.relu(self.fc3(X))
         action_probs = self.softmax(self.fc4(X))
         return action_probs
@@ -95,13 +91,13 @@ class CustomCNN(CNN):
         return current_frame
     
 class CustomCNNMultiFrame(CNN):
-    def __init__(self, deepq=False, hidden_size=256, dropout_rate=0.2, nframes=3) -> None:
+    def __init__(self, deepq=False, hidden_size=256, nframes=3) -> None:
         super(CustomCNNMultiFrame, self).__init__()
         self.nframes = nframes
         self.previous_frames = [np.zeros(self.shape) for _ in range(nframes)]
         self.repr_dim = hidden_size 
 
-        self.conv1 = nn.Conv2d(in_channels=nframes, out_channels=16, kernel_size=8, stride=3)
+        self.conv1 = nn.Conv2d(in_channels=nframes, out_channels=16, kernel_size=5, stride=3)
         self.bn1 = nn.BatchNorm2d(16)
         self.conv2 = nn.Conv2d(in_channels=16, out_channels=32, kernel_size=4, stride=2) 
         self.bn2 = nn.BatchNorm2d(32)
@@ -109,11 +105,8 @@ class CustomCNNMultiFrame(CNN):
         self.bn3 = nn.BatchNorm2d(32)
 
         self.fc1 = nn.Linear(1568, hidden_size)
-        self.dropout1 = nn.Dropout(dropout_rate)
         self.fc2 = nn.Linear(hidden_size, hidden_size)
-        self.dropout2 = nn.Dropout(dropout_rate)
         self.fc3 = nn.Linear(hidden_size, hidden_size//2)
-
         self.fc4 = nn.Linear(hidden_size // 2, 2)
         if deepq: self.softmax = lambda x:x
         else: self.softmax = nn.Softmax(dim=-1)
@@ -133,9 +126,7 @@ class CustomCNNMultiFrame(CNN):
         X = torch.relu(self.bn3(self.conv3(X)))
         X = X.view(state.shape[0], -1)
         X = torch.relu(self.fc1(X))
-        X = self.dropout1(X)
         X = torch.relu(self.fc2(X))
-        X = self.dropout2(X)
         X = torch.relu(self.fc3(X))
         action_probs = self.softmax(self.fc4(X))
         return action_probs
