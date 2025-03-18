@@ -4,7 +4,15 @@ from game.dynamicRules import DynamicRules
 from RL.agent import REINFORCE
 from RL.agent_deepq import REINFORCE_DEEPQ
 
-mode = "policy_grad"  # "policy_grad" or "deepq"
+mode = "deepq"  # "policy_grad" or "deepq"
+
+"""
+Hyperparams (DeepQ):
+
+baseline: 
+- batch_size: 64
+- target_update_freq: 250
+"""
 
 if __name__ == "__main__":
     pygame.init()
@@ -12,8 +20,8 @@ if __name__ == "__main__":
     if mode == "deepq": model = REINFORCE_DEEPQ
     elif mode == "policy_grad": model = REINFORCE
     else: raise ValueError(f'{mode} not implemented, only "policy_grad" or "deepq"')
-    agent = model(network='CNN', lr=1e-3)
-    game = FlappyBird(debug_kwargs={'hitbox_show': False}, state_type=agent.input_type(), max_speed=True)
+    agent = model(network='baseline', lr=3e-3)
+    game = FlappyBird(debug_kwargs={'hitbox_show': False}, agent=agent, state_type=agent.input_type(), max_speed=True)
     dynamicRules = DynamicRules(pipe_y_sep=250, score_threshold=5, upd_value=25)    
 
     epochs = 5000
@@ -31,6 +39,7 @@ if __name__ == "__main__":
             for event in pygame.event.get():
                 if event.type == pygame.QUIT: 
                     pass
+
             action = agent.select_action(state)
             next_state, reward, terminated, kwargs = game.step(action)
             agent.store_reward(reward)

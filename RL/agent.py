@@ -4,7 +4,7 @@ import torch.optim as optim
 import torch
 
 class REINFORCE: 
-    def __init__(self, network='baseline', lr=0.01, gamma=0.99) -> None:
+    def __init__(self, network='baseline', lr=0.01, gamma=0.99, **kwargs) -> None:
         self.network = network
         match network:
             case 'baseline': self.policy = Baseline().to(device)

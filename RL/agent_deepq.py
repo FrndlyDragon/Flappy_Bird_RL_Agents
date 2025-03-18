@@ -11,7 +11,7 @@ from RL.policyNetwork import *
 from RL.utils import device
 
 class REINFORCE_DEEPQ: 
-    def __init__(self, network='baseline', lr=0.01, gamma=0.99) -> None:
+    def __init__(self, network='baseline', lr=0.01, gamma=0.99, batch_size=64, target_update_freq=250, **kwargs) -> None:
         self.network = network
         match network:
             case 'baseline': 
@@ -26,13 +26,13 @@ class REINFORCE_DEEPQ:
         self.rewards = []
 
         self.memory = deque(maxlen=10000)
-        self.batch_size = 64
+        self.batch_size = batch_size
 
         self.epsilon = 1.0
         self.epsilon_min = 0.01
         self.epsilon_decay = 0.995
 
-        self.target_update_freq = 250
+        self.target_update_freq = target_update_freq
     
     def select_action(self, state):
         if random.random() < self.epsilon:
