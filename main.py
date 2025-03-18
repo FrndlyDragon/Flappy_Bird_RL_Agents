@@ -1,36 +1,22 @@
-import pygame
-from game.fb_game import FlappyBird
-from game.dynamicRules import DynamicRules
+import torch
 from RL.agent import REINFORCE
+from train import *
+from util import *
 
 
 if __name__ == "__main__":
-    pygame.init()
-    pygame.display.set_caption("Flappy Bird") 
-    agent = REINFORCE(network='baseline', lr=1e-3)
-    game = FlappyBird(debug_kwargs={'hitbox_show': False}, state_type=agent.input_type(), max_speed=True)
-    dynamicRules = DynamicRules(pipe_y_sep=250, score_threshold=5, upd_value=25)    
 
-    epochs = 5000
+    network = 'baseline'
+    agent = REINFORCE(network=network, lr=1e-2, epsilon_exploration=False)
 
-    score_mean = 0
-    for epoch in range(epochs):
-        changed = dynamicRules.update(score_mean)
-        if changed: score_mean = 0
+    # train
+    policy, mean_scores = train(agent, 500)
 
-        state = game.reset()
-        total_reward = 0
- 
-        while True:
-            action = agent.select_action(state)
-            next_state, reward, terminated, kwargs = game.step(action)
-            agent.store_reward(reward)
-            state = next_state
-            total_reward += reward
-            
+    # plot
+    plot_performance(mean_scores, f'{network}_mean_scores')
 
-            if terminated or kwargs['score']>100:
-                agent.update_policy()
-                break
-        score_mean = 0.1*kwargs['score'] + 0.9*score_mean
-        print(f"Epoch {epoch}, Total reward {total_reward:4f}, Score moving average {score_mean:4f}")
+    # eval
+    eval(agent, policy, n_games=100)
+
+    # save model
+    torch.save(policy.state_dict(), f"./models/{network}.pth")
