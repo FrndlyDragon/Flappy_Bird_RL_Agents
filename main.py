@@ -20,8 +20,6 @@ baseline:
 
 network = 'customCNN_MF'  # "baseline" or "customCNN" or "pretrainedCNN" or FF
 mode = "deepq"  # "policy_grad" or "deepq"
-network = 'customCNN_MF'  # "baseline" or "customCNN" or "pretrainedCNN" or FF
-mode = "deepq"  # "policy_grad" or "deepq"
 
 if __name__ == "__main__":
     pygame.init()
@@ -34,7 +32,7 @@ if __name__ == "__main__":
     agent = model(network=network, lr=5e-3, batch_size=64, target_update_freq=200, epsilon_decay=0.95, epsilon_exploration=True)
     DynamicRules().set_rules(275, 5, 25)
 
-    pretrain(agent, epochs=50, dataset_size=5000, batch_size=64, lr=5e-4,
+    pretrain(agent, epochs=50, dataset_size=50, batch_size=64, lr=5e-4,
              save_dataset=True, use_saved=False, dataset_path="pretrained_dataset_4_frames.pth", nframes=4)
     agent.policy.freeze_pretrain()
 
