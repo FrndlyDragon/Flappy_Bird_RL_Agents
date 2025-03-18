@@ -48,36 +48,3 @@ class Baseline(nn.Module):
         bird_angle = (bird_angle) / 90
 
         return [bird_y, bird_angle, top_pipe_x, top_pipe_y, bottom_pipe_x, bottom_pipe_y]
-    
-
-class CNN(nn.Module):
-    def __init__(self, deepq=False) -> None:
-        super(CNN, self).__init__()
-        self.conv1 = nn.Conv2d(in_channels=1, out_channels=32, kernel_size=8, stride=4)
-        self.conv2 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=4, stride=2) 
-        self.conv3 = nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1)
-        self.fc1 = nn.Linear(3136, 512)
-        self.fc2 = nn.Linear(512, 64)
-        self.fc3 = nn.Linear(64, 2)
-        if deepq: self.softmax = lambda x:x
-        else: self.softmax = nn.Softmax(dim=-1)
-
-    def forward(self, state):
-        X = torch.relu(self.conv1(state))
-        X = torch.relu(self.conv2(X))
-        X = torch.relu(self.conv3(X))
-        X = X.view(state.shape[0], -1)
-        X = torch.relu(self.fc1(X))
-        X = torch.relu(self.fc2(X))
-        action_probs = self.softmax(self.fc3(X))
-        return action_probs
-    
-    def input_type(self):
-        return "img"
-    
-    def get_input(self, game, shape=(84,84)):
-        pixels = pygame.surfarray.array3d(game.screen)
-        pixels = pygame.transform.scale(pygame.surfarray.make_surface(pixels), (shape[0], shape[1]))
-        pixels = pygame.surfarray.array3d(pixels)
-        gray_pixels = np.expand_dims(np.mean(pixels, axis=2), axis=0)
-        return gray_pixels

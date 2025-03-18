@@ -29,7 +29,7 @@ def plot_performance(scores, fname, points = None, window_size=30):
     plt.plot(steps[window_size-1:], smoothed_scores, label="Smoothed Scores (Moving Average)", linewidth=2)
 
     if points is not None and len(points)>0:
-        points_scores = [smoothed_scores[p] for p in points]
+        points_scores = [smoothed_scores[p-window_size] if p-window_size>0 else 0 for p in points]
         plt.scatter(points, points_scores, color='red', marker='x', label='Rules change')
 
     plt.title("Game Performance (Moving Average)")
