@@ -12,12 +12,14 @@ def train(agent, epochs=1000, score_gamma =0.9):
     dynamicRules = DynamicRules(pipe_y_sep=275, score_threshold=5, upd_value=25)    
 
     scores = []
+    rule_change_epochs = []
     score_mean = 0
     best_score_mean = 0
     best_policy = agent.policy
     for epoch in range(epochs):
         changed_rules = dynamicRules.update(score_mean)
         if changed_rules:
+            rule_change_epochs.append(epoch)
             score_mean = 0
             # reset best policy due to change of environment
             best_policy = copy.deepcopy(agent.policy)
@@ -46,7 +48,7 @@ def train(agent, epochs=1000, score_gamma =0.9):
         print(f"Epoch {epoch}, Total reward {_rw_str:>10}, Score moving average {_sc_str:>10}")
         
     print(f"Finished training, best mean score {best_score_mean}")
-    return best_policy, scores
+    return best_policy, scores, rule_change_epochs
 
 
 def eval(agent, policy, n_games = 20, max_score=1000):
@@ -55,7 +57,7 @@ def eval(agent, policy, n_games = 20, max_score=1000):
     DynamicRules().default_rules()
     pygame.init()
     pygame.display.set_caption("Flappy Bird")
-    game = FlappyBird(debug_kwargs={'hitbox_show': False}, state_type=agent.input_type(), max_speed=True)
+    game = FlappyBird(debug_kwargs={'hitbox_show': False}, agent=agent, state_type=agent.input_type(), max_speed=True)
 
     total_score = 0
     for _ in range(n_games):

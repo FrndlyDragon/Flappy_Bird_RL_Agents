@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def plot_performance(scores, fname, window_size=10):
+def plot_performance(scores, fname, points = None, window_size=30):
     """
     Plots the training and validation losses across epochs and saves the plot as an image file with name - fname(function argument). 
 
@@ -27,6 +27,11 @@ def plot_performance(scores, fname, window_size=10):
     # Plotting training and validation losses
     plt.plot(steps, scores, label="Original Scores", alpha=0.6)
     plt.plot(steps[window_size-1:], smoothed_scores, label="Smoothed Scores (Moving Average)", linewidth=2)
+
+    if points is not None and len(points)>0:
+        points_scores = [smoothed_scores[p] for p in points]
+        plt.scatter(points, points_scores, color='red', marker='x', label='Rules change')
+
     plt.title("Game Performance (Moving Average)")
     plt.xlabel("Step")
     plt.ylabel("Score")
