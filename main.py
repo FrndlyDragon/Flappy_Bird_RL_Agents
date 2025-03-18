@@ -17,7 +17,7 @@ baseline:
 - epsilon_decay: 0.9
 """
 
-network = 'FF'  # "baseline" or "CNN" or FF
+network = 'FF'  # "baseline" or "customCNN" or "pretrainedCNN" or FF
 mode = "policy_grad"  # "policy_grad" or "deepq"
 
 if __name__ == "__main__":
@@ -33,13 +33,13 @@ if __name__ == "__main__":
     pretrain(agent, epochs=50, dataset_size=5000, batch_size=64, lr=1e-4)
 
     # train
-    policy, mean_scores, rulechange_epochs = train(agent, 7500)
+    policy, mean_scores, rulechange_epochs = train(agent, 1000)
 
     # plot
-    plot_performance(mean_scores, points= rulechange_epochs, fname=f'{network}_scores')
+    plot_performance(mean_scores, points= rulechange_epochs, fname=f'{mode}_{network}_scores')
 
     # eval
     eval(agent, policy, n_games=100)
 
     # save model
-    torch.save(policy.state_dict(), f"./models/{network} {mode}.pth")
+    torch.save(policy.state_dict(), f"./models/{mode}_{network}.pth")
