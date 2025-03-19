@@ -16,12 +16,15 @@ class PretrainModel(nn.Module):
     def __init__(self, model, learn_features=False):
         super().__init__()
         self.model = model
+        # Ajoutez cette ligne pour projeter de 128 à 6 dimensions
         if not learn_features: self.fc = nn.Linear(model.repr_dim, 6)
+        else: self.fc = nn.Linear(128, 6)  # Projection pour learn_features=True
         self.learn_features = learn_features
     
     def forward(self, state):
         representation = self.model.pretrain_forward(state)
-        if not self.learn_features: representation = self.fc(representation)
+        # Toujours appliquer la projection, que learn_features soit True ou False
+        representation = self.fc(representation)
         return representation
     
     def freeze(self):
@@ -75,7 +78,7 @@ def pretrain(agent, epochs=10, dataset_size=1000, batch_size=64,
     else:
         dataset = torch.load(dataset_path)
         Xs = dataset["Xs"]
-        Ys = dataset["Ys"][:, [0,2,3,4,5]]
+        Ys = dataset["Ys"]
 
     pretrain_model = PretrainModel(agent.policy, learn_features).to(device)
 

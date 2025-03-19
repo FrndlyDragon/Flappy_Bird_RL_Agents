@@ -40,51 +40,70 @@ class CNN(nn.Module):
 class CustomCNN(CNN):
     def __init__(self, deepq=False) -> None:
         super(CustomCNN, self).__init__()
-        self.repr_dim = 5
+        self.repr_dim = 128  # increased from 5 to 128
         self.shape = (80,80)
 
-        self.conv1 = nn.Conv2d(in_channels=1, out_channels=16, kernel_size=5, stride=2)
-        self.conv2 = nn.Conv2d(in_channels=16, out_channels=32, kernel_size=5, stride=2) 
-        self.fc1 = nn.Linear(9248, 5)
-        self.fc2 = nn.Linear(5, 128)
-        self.fc3 = nn.Linear(128, 64)
-        self.fc4 = nn.Linear(64, 2)
+        #conv
+        self.conv1 = nn.Conv2d(in_channels=1, out_channels=32, kernel_size=8, stride=4)
+        self.conv2 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=4, stride=2)
+        self.conv3 = nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1)
+        
+        self.feature_fc = nn.Linear(2304, self.repr_dim)
+        
+        self.policy_fc1 = nn.Linear(self.repr_dim, 64)
+        self.policy_fc2 = nn.Linear(64, 2)
 
-        if deepq: self.softmax = lambda x:x
-        else: self.softmax = nn.Softmax(dim=-1)
+        if deepq: 
+            self.softmax = lambda x: x  # for DeepQ, no softmax (using Q-values directly)
+        else: 
+            self.softmax = nn.Softmax(dim=-1)  # For policy gradient
+            
         self._initialize_weights()
-
-        self.pretrain = [self.conv1, self.conv2, self.fc1]
+        
+        self.pretrain = [self.conv1, self.conv2, self.conv3, self.feature_fc]
 
     def pretrain_forward(self, state):
-        X = torch.relu(self.conv1(state))
-        X = torch.relu(self.conv2(X))
-        X = X.view(state.shape[0], -1)
-        X = self.fc1(X)
-        return X
+        """Forward pass for pretraining - extract features only"""
+        x = torch.relu(self.conv1(state))
+        x = torch.relu(self.conv2(x))
+        x = torch.relu(self.conv3(x))
+        x = x.view(state.shape[0], -1)
+        features = self.feature_fc(x)
+        return features
 
     def forward(self, state):
-        X = torch.relu(self.conv1(state))
-        X = torch.relu(self.conv2(X))
-        X = X.view(state.shape[0], -1)
-        X = torch.relu(self.fc1(X))
-        X = torch.relu(self.fc2(X))
-        X = torch.relu(self.fc3(X))
-        X = torch.relu(self.fc4(X))
-        action_probs = self.softmax(X)
+        """Full forward pass for action selection"""
+        x = torch.relu(self.conv1(state))
+        x = torch.relu(self.conv2(x))
+        x = torch.relu(self.conv3(x))
+        x = x.view(state.shape[0], -1)
+        
+        features = torch.relu(self.feature_fc(x))
+        
+        x = torch.relu(self.policy_fc1(features))
+        x = self.policy_fc2(x)
+        
+        action_probs = self.softmax(x)
         return action_probs
     
     def get_input(self, game):
-        # get image
+        """Process the game screen into network input"""
         pixels = pygame.surfarray.array3d(game.screen)
         pixels = pygame.transform.scale(pygame.surfarray.make_surface(pixels), self.shape)
         pixels = pygame.surfarray.array3d(pixels)
+        
+        # Convert to grayscale
         current_frame = np.expand_dims(np.mean(pixels, axis=2), 0)
-        # normalize image
-        current_frame /= 255
-        current_frame = (current_frame - np.mean(current_frame)) / (np.std(current_frame) + 1e-8)
+        
+        # Normalize image (important for CNN performance)
+        current_frame = current_frame / 255.0
+        
+        # Zero-center and normalize
+        if np.std(current_frame) > 0:
+            current_frame = (current_frame - np.mean(current_frame)) / np.std(current_frame)
+            
         return current_frame
-    
+
 class CustomCNNMultiFrame(CNN):
     def __init__(self, deepq=False, nframes=4) -> None:
         super(CustomCNNMultiFrame, self).__init__()
