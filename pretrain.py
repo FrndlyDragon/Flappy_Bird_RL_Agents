@@ -93,7 +93,7 @@ def train(pretrain_model, Xs, Ys, epochs, batch_size, **optim_kwargs):
             optimizer.step()
             total_loss += loss.item()
         avg_loss = total_loss / len(dataloader)
-        print(f"Pretrain Epoch {epoch}, Loss: {avg_loss:.6f}")
+        print(f"Pretrain Epoch {epoch+1}, Loss: {avg_loss:.6f}")
     print("Pretraining Done")
 
 
@@ -110,7 +110,7 @@ def eval(pretrain_model, Xs_val, Ys_val):
 
 def pretrain(agent, epochs=10, dataset_size=1000, batch_size=64, 
              save_dataset=True, use_saved=True, dataset_path="pretrained_dataset.pth", 
-             nframes=1, learn_features=False, **optim_kwargs):
+             nframes=1, learn_features=False, freeze=True, **optim_kwargs):
 
     if not use_saved or not os.path.exists(dataset_path): 
         print("Generating train dataset")
@@ -128,7 +128,7 @@ def pretrain(agent, epochs=10, dataset_size=1000, batch_size=64,
     Xs_val, Ys_val = generate_dataset(agent, 250, nframes)
     eval(pretrain_model, Xs_val, Ys_val)
 
-    pretrain_model.freeze()
+    if freeze: pretrain_model.freeze()
     print("Froze pretrained model")
 
     return pretrain_model
