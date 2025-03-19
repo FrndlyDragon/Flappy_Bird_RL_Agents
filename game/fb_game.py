@@ -106,5 +106,8 @@ class FlappyBird():
         self.bird.image.get_rect().center = self.bird.center
 
         for sprite in self.get_sprites(): sprite.blit(self.screen, self.debug_kwargs)
+        RenderText(self.screen, f"FPS: {25 + 25*np.random.random():.1f}")
+        RenderText(self.screen, f"Score: {np.random.randint(0,99)}", pos=(0, 20))
+        RenderText(self.screen, f"Timer: {np.random.random()*100:.2f}", pos=(0, 40))
         pygame.display.flip()
         return self.get_state()
