@@ -5,9 +5,9 @@ from tqdm import tqdm
 from game.fb_game import FlappyBird
 from game.dynamicRules import DynamicRules
 
-def train(agent, epochs=1000, score_gamma =0.9):
+def train(agent, epochs=1000, score_gamma =0.9, max_speed=True):
     agent.policy.train()
-    game = FlappyBird(debug_kwargs={'hitbox_show': False}, agent=agent, state_type=agent.input_type(), max_speed=True)
+    game = FlappyBird(debug_kwargs={'hitbox_show': False}, agent=agent, state_type=agent.input_type(), max_speed=max_speed)
     dynamicRules = DynamicRules() 
     dynamicRules.set_rules(pipe_y_sep=300, score_threshold=5, upd_value=25)   
 
@@ -53,14 +53,14 @@ def train(agent, epochs=1000, score_gamma =0.9):
     return best_policy, scores, rule_change_epochs
 
 
-def eval(agent, policy, n_games = 20, max_score=1000):
+def eval(agent, policy, n_games = 20, max_score=1000, max_speed=True):
     agent.policy = policy
     agent.policy.eval()
 
     DynamicRules().default_rules()
     pygame.init()
     pygame.display.set_caption("Flappy Bird")
-    game = FlappyBird(debug_kwargs={'hitbox_show': False}, agent=agent, state_type=agent.input_type(), max_speed=True)
+    game = FlappyBird(debug_kwargs={'hitbox_show': False}, agent=agent, state_type=agent.input_type(), max_speed=max_speed)
 
     total_score = 0
     for _ in tqdm(range(n_games)):
