@@ -16,19 +16,25 @@ class PretrainModel(nn.Module):
     def __init__(self, model, learn_features=False):
         super().__init__()
         self.model = model
-        # Ajoutez cette ligne pour projeter de 128 à 6 dimensions
-        if not learn_features: self.fc = nn.Linear(model.repr_dim, 6)
-        else: self.fc = nn.Linear(128, 6)  # Projection pour learn_features=True
         self.learn_features = learn_features
+        if not learn_features: self.fc = nn.Linear(model.repr_dim, 6)     
     
     def forward(self, state):
         representation = self.model.pretrain_forward(state)
-        # Toujours appliquer la projection, que learn_features soit True ou False
-        representation = self.fc(representation)
+        if not self.learn_features : representation = self.fc(representation)
         return representation
     
     def freeze(self):
         self.model.freeze_pretrain()
+
+    def train_mode(self):
+        self.train()
+        self.model.train()
+    
+    def eval_mode(self):
+        self.eval()
+        self.model.eval()
+
 
 def pretrain_features(game):
     next_top_pipes = [pipe for pipe in game.pipes.top_pipes if game.bird.pos.x < (pipe.pos.x + pipe.size[0])]
@@ -55,42 +61,27 @@ def pretrain_features(game):
 
     return [bird_y, bird_angle, top_pipe_x, top_pipe_y, bottom_pipe_x, bottom_pipe_y]
 
-def pretrain(agent, epochs=10, dataset_size=1000, batch_size=64, 
-             save_dataset=True, use_saved=True, dataset_path="pretrained_dataset.pth", 
-             nframes=1, learn_features=False, **optim_kwargs):
+
+def generate_dataset(agent, dataset_size, nframes):  
     game = FlappyBird(debug_kwargs={'hitbox_show': False}, agent=agent, state_type=agent.input_type(), max_speed=True)
+    Xs, Ys = [], []
+    for _ in tqdm(range(dataset_size)):
+        state = game.set_random_state()
+        for _ in range(nframes-1):
+            state, _, _, _ = game.step(1 if np.random.random()<0.1 else 0)
+        Xs.append(state)
+        Ys.append(pretrain_features(game))
+    return torch.tensor(Xs, dtype=torch.float), torch.tensor(Ys, dtype=torch.float)
 
-    Xs = []
-    Ys = []
 
-    if not use_saved or not os.path.exists(dataset_path): 
-        print("Generating dataset")
-        for _ in tqdm(range(dataset_size)):
-            state = game.set_random_state()
-            for _ in range(nframes-1):
-                state, _, _, _ = game.step(1 if np.random.random()<0.2 else 0)
-            Xs.append(state)
-            Ys.append(pretrain_features(game))
-        
-        Xs = torch.tensor(Xs, dtype=torch.float)
-        Ys = torch.tensor(Ys, dtype=torch.float)
-        if save_dataset: torch.save({'Xs': Xs, 'Ys': Ys}, dataset_path)
-    else:
-        dataset = torch.load(dataset_path)
-        Xs = dataset["Xs"]
-        Ys = dataset["Ys"]
-
-    pretrain_model = PretrainModel(agent.policy, learn_features).to(device)
-
+def train(pretrain_model, Xs, Ys, epochs, batch_size, **optim_kwargs):
+    print("Pretraining Start")
     optimizer = optim.Adam(pretrain_model.parameters(), **optim_kwargs)
     criterion = nn.MSELoss() # lambda pred, target: (((pred - target)/(target + 1e-3))**2).mean()  
-
     dataset = torch.utils.data.TensorDataset(Xs, Ys)
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
-    print("Pretrain Start")
-
-    pretrain_model.train()
+    pretrain_model.train_mode()
     for epoch in range(epochs):
         total_loss = 0.0
         for batch_X, batch_Y in dataloader:
@@ -101,13 +92,43 @@ def pretrain(agent, epochs=10, dataset_size=1000, batch_size=64,
             loss.backward()
             optimizer.step()
             total_loss += loss.item()
-
         avg_loss = total_loss / len(dataloader)
         print(f"Pretrain Epoch {epoch}, Loss: {avg_loss:.6f}")
-    
-    print("Pretrain Done")
+    print("Pretraining Done")
 
-    #pretrain_model.freeze()
+
+def eval(pretrain_model, Xs_val, Ys_val):
+    criterion = nn.MSELoss()
+    pretrain_model.eval_mode()
+    with torch.no_grad():
+        Xs_val, Ys_val = Xs_val.to(device), Ys_val.to(device)
+        Ys_pred = pretrain_model.forward(Xs_val)
+        val_loss = criterion(Ys_pred, Ys_val).item()
+    pretrain_model.train_mode()
+    print(f"Validation loss, {val_loss}")
+
+
+def pretrain(agent, epochs=10, dataset_size=1000, batch_size=64, 
+             save_dataset=True, use_saved=True, dataset_path="pretrained_dataset.pth", 
+             nframes=1, learn_features=False, **optim_kwargs):
+
+    if not use_saved or not os.path.exists(dataset_path): 
+        print("Generating train dataset")
+        Xs, Ys = generate_dataset(agent, dataset_size, nframes)
+        if save_dataset: torch.save({'Xs': Xs, 'Ys': Ys}, dataset_path)
+    else:
+        dataset = torch.load(dataset_path)
+        Xs = dataset["Xs"]
+        Ys = dataset["Ys"]
+
+    pretrain_model = PretrainModel(agent.policy, learn_features).to(device)
+    train(pretrain_model, Xs , Ys, epochs , batch_size, **optim_kwargs)
+
+    print("Generating validation dataset")
+    Xs_val, Ys_val = generate_dataset(agent, 250, nframes)
+    eval(pretrain_model, Xs_val, Ys_val)
+
+    pretrain_model.freeze()
     print("Froze pretrained model")
 
     return pretrain_model
