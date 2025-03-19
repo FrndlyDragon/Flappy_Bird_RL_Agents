@@ -103,7 +103,7 @@ class CustomCNNMultiFrame(CNN):
         if deepq: self.softmax = lambda x:x
         else: self.softmax = nn.Softmax(dim=-1)
 
-        self.pretrain = [self.conv1, self.bn1, self.conv2, self.bn2, self.conv3, self.bn3, self.fc1, self.fc2]
+        #self.pretrain = [self.conv1, self.bn1, self.conv2, self.bn2, self.conv3, self.bn3, self.fc1, self.fc2]
         self._initialize_weights()
 
         self.pretrain = [self.conv1, self.conv2, self.fc1]
