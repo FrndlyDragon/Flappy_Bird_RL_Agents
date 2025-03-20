@@ -22,17 +22,18 @@ def plot_performance(scores, fname, points = None, window_size=30):
 
     steps = np.arange(len(scores))
     window = np.ones(window_size) / window_size  # Normalized averaging kernel
-    smoothed_scores = np.convolve(scores, window, mode='valid')
+    smoothed_scores = np.convolve(scores, window, mode='same')
 
     # Plotting training and validation losses
     plt.plot(steps, scores, label="Original Scores", alpha=0.6)
-    plt.plot(steps[window_size-1:], smoothed_scores, label="Smoothed Scores (Moving Average)", linewidth=2)
+    plt.plot(steps, smoothed_scores, label="Smoothed Scores (Moving Average)", linewidth=2)
 
     if points is not None and len(points)>0:
-        points_scores = [smoothed_scores[p-window_size] if p-window_size>0 else 0 for p in points]
+        points_scores = [smoothed_scores[p] for p in points]
         plt.scatter(points, points_scores, color='red', marker='x', label='Rules change')
 
     plt.title("Game Performance (Moving Average)")
+    plt.ylim((0,50))
     plt.xlabel("Step")
     plt.ylabel("Score")
     plt.legend()
