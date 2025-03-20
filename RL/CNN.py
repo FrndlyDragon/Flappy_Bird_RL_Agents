@@ -211,3 +211,97 @@ class PretrainedCNN(CNN):
         current_frame /= 255
         current_frame = (current_frame - np.mean(current_frame)) / (np.std(current_frame) + 1e-8)
         return current_frame
+    
+class RobustCNN(CNN):
+    def __init__(self, deepq=False) -> None:
+        super(RobustCNN, self).__init__()
+        self.shape = (84, 84)  # Taille standard pour les jeux
+        
+        # Architecture inspirée du DQN pour Atari
+        self.conv1 = nn.Conv2d(in_channels=1, out_channels=32, kernel_size=8, stride=4)
+        self.bn1 = nn.BatchNorm2d(32)  # Normalisation par batch pour stabilité
+        
+        self.conv2 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=4, stride=2)
+        self.bn2 = nn.BatchNorm2d(64)
+        
+        self.conv3 = nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1)
+        self.bn3 = nn.BatchNorm2d(64)
+        
+        # Couche adaptive pour s'adapter à différentes tailles d'entrée
+        self.adaptive_pool = nn.AdaptiveAvgPool2d((7, 7))
+        
+        # Calcul automatique de la taille après convolutions
+        conv_output_size = 64 * 7 * 7  # après l'adaptive pooling
+        
+        # Couches fully connected
+        self.fc1 = nn.Linear(conv_output_size, 512)
+        self.dropout1 = nn.Dropout(0.2)  # Dropout pour éviter le surapprentissage
+        
+        self.fc2 = nn.Linear(512, 2)  # 2 actions: flap ou no flap
+        
+        # Fonction d'activation
+        self.activation = nn.LeakyReLU(0.1)  # LeakyReLU pour éviter les neurones morts
+        
+        # Couche de sortie
+        if deepq:
+            self.softmax = lambda x: x  # Pas de softmax pour DeepQ
+        else:
+            self.softmax = nn.Softmax(dim=-1)
+            
+        self._initialize_weights()
+        
+        # Pas de couches pretrain car ce modèle n'en a pas besoin
+        self.pretrain = []
+
+    def forward(self, state):
+        """Full forward pass pour l'inférence"""
+        # Extraction de caractéristiques
+        x = self.activation(self.bn1(self.conv1(state)))
+        x = self.activation(self.bn2(self.conv2(x)))
+        x = self.activation(self.bn3(self.conv3(x)))
+        
+        # Pooling adaptatif pour garantir une taille de sortie constante
+        x = self.adaptive_pool(x)
+        x = x.view(x.size(0), -1)  # Aplatissement
+        
+        # Couches fully connected
+        x = self.activation(self.fc1(x))
+        x = self.dropout1(x)
+        x = self.fc2(x)
+        
+        # Appliquer softmax si nécessaire (pour policy gradient)
+        action_probs = self.softmax(x)
+        return action_probs
+    
+    def pretrain_forward(self, state):
+        """Pour compatibilité avec le code existant, même si pas utilisé"""
+        x = self.activation(self.bn1(self.conv1(state)))
+        x = self.activation(self.bn2(self.conv2(x)))
+        x = self.activation(self.bn3(self.conv3(x)))
+        x = self.adaptive_pool(x)
+        x = x.view(x.size(0), -1)
+        x = self.activation(self.fc1(x))
+        return x
+    
+    def get_input(self, game):
+        """Prétraitement de l'image du jeu"""
+        # Récupérer l'image
+        pixels = pygame.surfarray.array3d(game.screen)
+        pixels = pygame.transform.scale(pygame.surfarray.make_surface(pixels), self.shape)
+        pixels = pygame.surfarray.array3d(pixels)
+        
+        # Conversion en niveaux de gris
+        current_frame = np.expand_dims(np.mean(pixels, axis=2), 0)
+        
+        # Normalisation importante pour les CNNs
+        current_frame = current_frame / 255.0
+        
+        # Normalisation avancée (zero-center + division par écart-type)
+        if np.std(current_frame) > 0:
+            current_frame = (current_frame - np.mean(current_frame)) / np.std(current_frame)
+        
+        return current_frame
+        
+    def reset(self):
+        """Réinitialisation si nécessaire"""
+        pass

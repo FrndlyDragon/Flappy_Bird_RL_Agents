@@ -18,7 +18,7 @@ baseline:
 - epsilon_decay: 0.9
 """
 
-network = 'customCNN'  # "baseline" or "customCNN" or "customCNN_MF" or "pretrainedCNN" or FF
+network = 'robustCNN'  # "baseline" or "customCNN" or "customCNN_MF" or "pretrainedCNN" or FF
 mode = "deepq"  # "policy_grad" or "deepq"
 
 if __name__ == "__main__":
@@ -29,12 +29,12 @@ if __name__ == "__main__":
     elif mode == "policy_grad": model = REINFORCE
     else: raise ValueError(f'{mode} not implemented, only "policy_grad" or "deepq"')
 
-    agent = model(network=network, lr=5e-3, batch_size=128, target_update_freq=250, epsilon_decay=0.9, epsilon_end=0.00001, epsilon_exploration=True)
+    agent = model(network=network, lr=5e-5, batch_size=32, target_update_freq=100, epsilon_decay=0.99, epsilon_end=0.1, epsilon_exploration=True)
     DynamicRules().set_rules(275, 5, 25)
 
-    if network != 'baseline':
-        pretrain(agent, epochs=50, dataset_size=5000, batch_size=64, lr=1e-3,
-                save_dataset=True, use_saved=True, dataset_path="data/pretrained_dataset_signle_frame.pth", nframes=1, learn_features=True)
+    #if network != 'baseline':
+    #    pretrain(agent, epochs=50, dataset_size=5000, batch_size=64, lr=1e-3,
+    #            save_dataset=True, use_saved=False, dataset_path="data/pretrained_dataset_signle_frame.pth", nframes=1, learn_features=True)
 
     # train
     policy, mean_scores, rulechange_epochs = train(agent, 2000)
