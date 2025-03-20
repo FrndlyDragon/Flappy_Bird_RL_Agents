@@ -40,7 +40,8 @@ class CNN(nn.Module):
 class CustomCNN(CNN):
     def __init__(self, deepq=False) -> None:
         super(CustomCNN, self).__init__()
-        self.repr_dim = 128  # increased from 5 to 128
+        self.nframes = 1
+        self.repr_dim = 6
         self.shape = (80,80)
 
         #conv
@@ -48,10 +49,12 @@ class CustomCNN(CNN):
         self.conv2 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=4, stride=2)
         self.conv3 = nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1)
         
-        self.feature_fc = nn.Linear(2304, self.repr_dim)
+        self.feature_fc1 = nn.Linear(2304, 512)
+        self.feature_fc2 = nn.Linear(512, self.repr_dim)
         
-        self.policy_fc1 = nn.Linear(self.repr_dim, 64)
-        self.policy_fc2 = nn.Linear(64, 2)
+        self.policy_fc1 = nn.Linear(self.repr_dim, 128)
+        self.policy_fc2 = nn.Linear(128, 64)
+        self.policy_fc3 = nn.Linear(64, 2)
 
         if deepq: 
             self.softmax = lambda x: x  # for DeepQ, no softmax (using Q-values directly)
@@ -60,7 +63,7 @@ class CustomCNN(CNN):
             
         self._initialize_weights()
         
-        self.pretrain = [self.conv1, self.conv2, self.conv3, self.feature_fc]
+        self.pretrain = [self.conv1, self.conv2, self.conv3, self.feature_fc1, self.feature_fc2]
 
     def pretrain_forward(self, state):
         """Forward pass for pretraining - extract features only"""
@@ -68,7 +71,8 @@ class CustomCNN(CNN):
         x = torch.relu(self.conv2(x))
         x = torch.relu(self.conv3(x))
         x = x.view(state.shape[0], -1)
-        features = self.feature_fc(x)
+        x = torch.relu(self.feature_fc1(x))
+        features = torch.relu(self.feature_fc2(x))
         return features
 
     def forward(self, state):
@@ -77,11 +81,12 @@ class CustomCNN(CNN):
         x = torch.relu(self.conv2(x))
         x = torch.relu(self.conv3(x))
         x = x.view(state.shape[0], -1)
-        
-        features = torch.relu(self.feature_fc(x))
+        x = torch.relu(self.feature_fc1(x))
+        features = torch.relu(self.feature_fc2(x))
         
         x = torch.relu(self.policy_fc1(features))
         x = self.policy_fc2(x)
+        x = self.policy_fc3(x)
         
         action_probs = self.softmax(x)
         return action_probs
@@ -97,11 +102,7 @@ class CustomCNN(CNN):
         
         # Normalize image (important for CNN performance)
         current_frame = current_frame / 255.0
-        
-        # Zero-center and normalize
-        if np.std(current_frame) > 0:
-            current_frame = (current_frame - np.mean(current_frame)) / np.std(current_frame)
-            
+        current_frame = (current_frame - np.mean(current_frame)) / np.std(current_frame + 1e-9)
         return current_frame
 
 class CustomCNNMultiFrame(CNN):
