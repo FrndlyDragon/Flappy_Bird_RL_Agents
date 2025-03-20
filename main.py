@@ -29,7 +29,7 @@ if __name__ == "__main__":
     elif mode == "policy_grad": model = REINFORCE
     else: raise ValueError(f'{mode} not implemented, only "policy_grad" or "deepq"')
 
-    agent = model(network=network, lr=5e-5, batch_size=32, target_update_freq=100, epsilon_decay=0.99, epsilon_end=0.1, epsilon_exploration=True)
+    agent = model(network=network, lr=5e-4, batch_size=64, target_update_freq=200, epsilon_decay=0.999, epsilon_end=0.0001, epsilon_exploration=True)
     DynamicRules().set_rules(275, 5, 25)
 
     #if network != 'baseline':
